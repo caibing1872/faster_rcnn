@@ -1,4 +1,5 @@
-function [pred_boxes, scores] = fast_rcnn_conv_feat_detect(conf, caffe_net, im, conv_feat_blob, boxes, max_rois_num_in_gpu)
+function [pred_boxes, scores] = fast_rcnn_conv_feat_detect(conf, ...
+    caffe_net, im, conv_feat_blob, boxes, max_rois_num_in_gpu)
 % [pred_boxes, scores] = fast_rcnn_conv_feat_detect(conf, caffe_net, im, conv_feat_blob, boxes, max_rois_num_in_gpu)
 % --------------------------------------------------------
 % Fast R-CNN

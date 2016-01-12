@@ -9,15 +9,16 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # User Ingore
-models/
+#models/
 data/
 datasets/
-external/caffe/matlab
+external/caffe
 output/
 cachedir/
 imdb/cache
 *.caffemodel
 *.mat
+*.m~
 
 # Windows Installer files
 *.cab

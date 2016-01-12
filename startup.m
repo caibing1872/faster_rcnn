@@ -5,7 +5,7 @@ function startup()
 % Copyright (c) 2015, Shaoqing Ren
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
-
+    
     curdir = fileparts(mfilename('fullpath'));
     addpath(genpath(fullfile(curdir, 'utils')));
     addpath(genpath(fullfile(curdir, 'functions')));

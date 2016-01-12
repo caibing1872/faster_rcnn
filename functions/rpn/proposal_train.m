@@ -110,7 +110,7 @@ function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargi
 
         % generate minibatch training data
         [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, image_roidb_train, conf.ims_per_batch);        
-        [net_inputs, scale_inds] = proposal_generate_minibatch_fun(conf, image_roidb_train(sub_db_inds));
+        [net_inputs, ~] = proposal_generate_minibatch_fun(conf, image_roidb_train(sub_db_inds));
         
         % visual_debug_fun(conf, image_roidb_train(sub_db_inds), net_inputs, bbox_means, bbox_stds, conf.classes, scale_inds);
         caffe_solver.net.reshape_as_input(net_inputs);
@@ -139,6 +139,9 @@ function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargi
             snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
         end
         
+        if ~mod(iter_, 100)
+            fprintf('iter %d\n', iter_);
+        end
         iter_ = caffe_solver.iter();
     end
     
