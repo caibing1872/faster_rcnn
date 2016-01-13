@@ -1,4 +1,4 @@
-# net: ".\\models\\rpn_prototxts\\vgg_16layers_conv3_1\\train_val.prototxt"
+
 # change the format here
 net: "./models/rpn_prototxts/vgg_16layers_conv3_1/train_val.prototxt"
 base_lr: 0.001

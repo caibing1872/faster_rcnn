@@ -1,9 +1,5 @@
-% script_faster_rcnn_VOC2007_VGG16()
+% script_faster_rcnn_ImageNet_VGG16()
 % Faster rcnn training and testing with VGG16 model
-% --------------------------------------------------------
-% Faster R-CNN
-% Copyright (c) 2015, Shaoqing Ren
-% Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
 
 clc; clear;
@@ -19,15 +15,16 @@ caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 
-
-% load paramters from the 'models' folder
-model                       = Model.VGG16_for_Faster_RCNN_VOC2007;
+% load paramters from the 'models' folder (same as VOC07)
+model = Model.VGG16_for_Faster_RCNN_VOC2007;
 
 % train/test data
 dataset                     = [];
 use_flipped                 = true;
-dataset                     = Dataset.voc2007_trainval(dataset, 'train', use_flipped);
-dataset                     = Dataset.voc2007_test(dataset, 'test', false);
+% change to point to your devkit install
+devkit = './datasets/ilsvrc13_det';
+dataset = Dataset.ilsvrc13(dataset, 'train', use_flipped, devkit);
+dataset = Dataset.ilsvrc13(dataset, 'test', false, devkit);
 
 % conf
 conf_proposal = proposal_config('image_means', model.mean_image, ...
@@ -35,7 +32,7 @@ conf_proposal = proposal_config('image_means', model.mean_image, ...
 conf_fast_rcnn = fast_rcnn_config('image_means', model.mean_image);
 
 % cache base
-cache_base_proposal         = 'VOC07_vgg';
+cache_base_proposal         = 'ilsvrc13_vgg';
 cache_base_fast_rcnn        = '';
 % set cache folder for each stage
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, cache_base_fast_rcnn, model);
@@ -101,4 +98,5 @@ opts.final_mAP = Faster_RCNN_Train.do_fast_rcnn_test(conf_fast_rcnn, ...
     model.stage2_fast_rcnn, dataset.imdb_test, dataset.roidb_test);
 
 % save final models, for outside tester
-Faster_RCNN_Train.gather_rpn_fast_rcnn_models(conf_proposal, conf_fast_rcnn, model, dataset);
+Faster_RCNN_Train.gather_rpn_fast_rcnn_models(conf_proposal, ...
+    conf_fast_rcnn, model, dataset);

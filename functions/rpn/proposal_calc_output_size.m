@@ -9,12 +9,12 @@ function [output_width_map, output_height_map] = proposal_calc_output_size(conf,
 %     caffe.init_log(fullfile(pwd, 'caffe_log'));
     caffe_net = caffe.Net(test_net_def_file, 'test');
     
-     % set gpu/cpu
-    if conf.use_gpu
-        caffe.set_mode_gpu();
-    else
-        caffe.set_mode_cpu();
-    end
+%      % set gpu/cpu
+%     if conf.use_gpu
+%         caffe.set_mode_gpu();
+%     else
+%         caffe.set_mode_cpu();
+%     end
     
     input = 100:conf.max_size;
     output_w = nan(size(input));

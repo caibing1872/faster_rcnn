@@ -9,11 +9,11 @@ function conf = proposal_config(varargin)
     ip = inputParser;
     
     %% training
-    ip.addParamValue('use_gpu',         gpuDeviceCount > 0, ...            
+    ip.addParameter('use_gpu',         gpuDeviceCount > 0, ...            
                                                         @islogical);
                                     
     % whether drop the anchors that has edges outside of the image boundary
-    ip.addParamValue('drop_boxes_runoff_image', ...
+    ip.addParameter('drop_boxes_runoff_image', ...
                                         true,           @islogical);
     
     % Image scales -- the short edge of input image                                                                                                
@@ -38,7 +38,7 @@ function conf = proposal_config(varargin)
     % mean image, in RGB order
     ip.addParamValue('image_means',     128,            @ismatrix);
     % Use horizontally-flipped images during training?
-    ip.addParamValue('use_flipped',     true,           @islogical);
+    ip.addParameter('use_flipped',     true,           @islogical);
     % Stride in input image pixels at ROI pooling level (network specific)
     % 16 is true for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
     ip.addParamValue('feat_stride',     16,             @isscalar);

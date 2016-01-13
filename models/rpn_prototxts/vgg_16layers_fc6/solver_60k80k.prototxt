@@ -1,4 +1,4 @@
-#net: ".\\models\\rpn_prototxts\\vgg_16layers_fc6\\train_val.prototxt"
+
 net: "./models/rpn_prototxts/vgg_16layers_fc6/train_val.prototxt"
 base_lr: 0.001
 lr_policy: "step"
