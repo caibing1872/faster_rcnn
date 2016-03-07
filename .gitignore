@@ -13,7 +13,7 @@ $RECYCLE.BIN/
 bin/
 data/
 datasets/
-external/caffe
+external
 output/
 cachedir/
 imdb/cache
