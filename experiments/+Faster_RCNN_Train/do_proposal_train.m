@@ -3,7 +3,8 @@ function model_stage = do_proposal_train(conf, dataset, model_stage, do_val)
         dataset.imdb_test = struct();
         dataset.roidb_test = struct();
     end
-
+    % save_model_path
+    % like, '.../rpn_cachedir/ilsvrc13_vgg_stage1_rpn/ilsvrc13_val1/final'
     model_stage.output_model_file = proposal_train(conf, dataset.imdb_train, dataset.roidb_train, ...
                                     'do_val',           do_val, ...
                                     'imdb_val',         dataset.imdb_test, ...

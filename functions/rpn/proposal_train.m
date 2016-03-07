@@ -25,29 +25,30 @@ ip.addParameter('cache_name',          'Zeiler_conv5', @isstr);
 ip.parse(conf, imdb_train, roidb_train, varargin{:});
 opts = ip.Results;
 
-%% try to find trained model
+%% if the trained model is saved, skip the following and return
 imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
+% the famous 'final.caffemodel'
 save_model_path = fullfile(cache_dir, 'final');
 if exist(save_model_path, 'file')
     return;
 end
 
 %% init
-% init caffe solver
+% init caffe log
 imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
-mkdir_if_missing(cache_dir);
-caffe_log_file_base = fullfile(cache_dir, 'caffe_log');
+mkdir_if_missing([cache_dir '/caffe_log']);
+caffe_log_file_base = fullfile(cache_dir, 'caffe_log/train_');
 caffe.init_log(caffe_log_file_base);
-
+% init caffe solver
 caffe_solver = caffe.Solver(opts.solver_def_file);
 caffe_solver.net.copy_from(opts.net_file);
 
-% init log
+% init matlab log
 timestamp = datestr(datevec(now()), 'yyyymmdd_HHMMSS');
-mkdir_if_missing(fullfile(cache_dir, 'log'));
-log_file = fullfile(cache_dir, 'log', ['train_', timestamp, '.txt']);
+mkdir_if_missing(fullfile(cache_dir, 'matlab_log'));
+log_file = fullfile(cache_dir, 'matlab_log', ['train_', timestamp, '.txt']);
 diary(log_file);
 
 % set random seed
@@ -90,7 +91,6 @@ conf.classes        = opts.imdb_train{1}.classes;
 check_gpu_memory(conf, caffe_solver, opts.do_val);
 
 %% train
-
 proposal_generate_minibatch_fun = @proposal_generate_minibatch;
 visual_debug_fun                = @proposal_visual_debug;
 

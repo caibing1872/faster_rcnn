@@ -5,7 +5,7 @@ function [output_width_map, output_height_map] = proposal_calc_output_size(conf,
 % Copyright (c) 2015, Shaoqing Ren
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
-
+    fprintf('pre-calculating output size of rpn network, taking a while...\n');
 %     caffe.init_log(fullfile(pwd, 'caffe_log'));
     caffe_net = caffe.Net(test_net_def_file, 'test');
     

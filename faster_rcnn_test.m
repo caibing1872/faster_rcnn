@@ -1,44 +1,41 @@
 % neat version of the faster_rcnn_test pipeline
 
-close all; clear;
-%clc;
+close all; clear; %clc;
 %run(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'startup'));
 run('./startup');
 
 caffe_dir = './external/caffe/matlab';
 im_path = './datasets/demo';
+im_dir = dir([im_path '/*.jpg']);
 model_dir = fullfile(pwd, 'output', 'faster_rcnn_final', 'faster_rcnn_VOC0712_vgg_16layers');
-% model_dir = fullfile(pwd, 'output', 'faster_rcnn_final', 'faster_rcnn_VOC0712_ZF');
+%model_dir = fullfile(pwd, 'output', 'faster_rcnn_final', 'faster_rcnn_VOC0712_ZF');
 
 %% init
 opts.caffe_version          = 'caffe_faster_rcnn';
-opts.gpu_id                 = 0;
-%auto_select_gpu;
+opts.gpu_id                 = 0;%auto_select_gpu;
 opts.per_nms_topN           = 6000;
 opts.nms_overlap_thres      = 0.7;
 opts.after_nms_topN         = 300;
-%opts.use_gpu                = true;
-%opts.test_scales            = 600;
+opts.use_gpu                = true;
+opts.test_scales            = 600;
 
-addpath(genpath(caffe_dir));
-%active_caffe_mex(opts.gpu_id, opts.caffe_version);
-im_dir = dir([im_path '/*.jpg']);
+% load model
 proposal_detection_model = load_proposal_detection_model(model_dir);
+proposal_detection_model.conf_proposal.test_scales = opts.test_scales;
+proposal_detection_model.conf_detection.test_scales = opts.test_scales;
+proposal_detection_model.conf_proposal.image_means = ...
+    gpuArray(proposal_detection_model.conf_proposal.image_means);
+proposal_detection_model.conf_detection.image_means = ...
+    gpuArray(proposal_detection_model.conf_detection.image_means);
 
-% uncomment the following if you don't change the type of image_mean to GPU
-% in the model.mat file
-% proposal_detection_model.conf_proposal.test_scales = opts.test_scales;
-% proposal_detection_model.conf_detection.test_scales = opts.test_scales;
-% proposal_detection_model.conf_proposal.image_means = ...
-%     gpuArray(proposal_detection_model.conf_proposal.image_means);
-% proposal_detection_model.conf_detection.image_means = ...
-%     gpuArray(proposal_detection_model.conf_detection.image_means);
-
-% caffe.init_log(fullfile(pwd, 'caffe_log'));
+%caffe.init_log(fullfile(pwd, 'caffe_log'));
+%active_caffe_mex(opts.gpu_id, opts.caffe_version);
+addpath(genpath(caffe_dir));
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
-%proposal net
+
+% proposal net
 rpn_net = caffe.Net(proposal_detection_model.proposal_net_def, 'test');
 rpn_net.copy_from(proposal_detection_model.proposal_net);
 % fast rcnn net

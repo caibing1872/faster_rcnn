@@ -1,12 +1,13 @@
-% script_faster_rcnn_ImageNet_VGG16()
+% script_faster_rcnn_VOC2007_VGG16()
 % Faster rcnn training and testing with VGG16 model
 % --------------------------------------------------------
 
 clc; clear;
 run('./startup');
 %% init
+fprintf('\n***************\ninit model,conf,dataset \n***************\n');
 opts.caffe_version          = 'caffe_faster_rcnn';
-opts.gpu_id                 = 1;
+opts.gpu_id                 = 0;
 opts.do_val                 = true;
 
 caffe_dir = './external/caffe/matlab';
@@ -15,31 +16,25 @@ caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 
-% load paramters from the 'models' folder (same as VOC07)
-model = Model.VGG16_for_Faster_RCNN_VOC2007;
-
-% train/test data
-dataset                     = [];
-use_flipped                 = true;
-% change to point to your devkit install
-devkit = './datasets/ilsvrc13_det';
-dataset = Dataset.ilsvrc13(dataset, 'train', use_flipped, devkit);
-dataset = Dataset.ilsvrc13(dataset, 'test', false, devkit);
-
-% conf
-conf_proposal = proposal_config('image_means', model.mean_image, ...
-    'feat_stride', model.feat_stride);
-conf_fast_rcnn = fast_rcnn_config('image_means', model.mean_image);
-
+% load paramters from the 'models' folder
+model                       = Model.VGG16_for_Faster_RCNN_VOC2007;
 % cache base
-cache_base_proposal         = 'ilsvrc13_vgg';
+cache_base_proposal         = 'VOC07_vgg';
 cache_base_fast_rcnn        = '';
 % set cache folder for each stage
-model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, cache_base_fast_rcnn, model);
+model                       = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, cache_base_fast_rcnn, model);
 
-% generate anchors and pre-calculate output size of rpn network 
-[conf_proposal.anchors, conf_proposal.output_width_map, conf_proposal.output_height_map] ...
-    = proposal_prepare_anchors(conf_proposal, model.stage1_rpn.cache_name, model.stage1_rpn.test_net_def_file);
+% train/test data
+% init:
+%   imdb_train, roidb_train, cell;
+%   imdb_test, roidb_test, struct
+dataset                     = [];
+use_flipped                 = true;
+dataset                     = Dataset.voc2007_trainval(dataset, 'train', use_flipped);
+dataset                     = Dataset.voc2007_test(dataset, 'test', false);
+
+% conf
+[ conf_proposal, conf_fast_rcnn ] = Faster_RCNN_Train.set_config( cache_base_proposal, model );
 
 %%  stage one proposal
 fprintf('\n***************\nstage one proposal \n***************\n');
@@ -98,5 +93,4 @@ opts.final_mAP = Faster_RCNN_Train.do_fast_rcnn_test(conf_fast_rcnn, ...
     model.stage2_fast_rcnn, dataset.imdb_test, dataset.roidb_test);
 
 % save final models, for outside tester
-Faster_RCNN_Train.gather_rpn_fast_rcnn_models(conf_proposal, ...
-    conf_fast_rcnn, model, dataset);
+Faster_RCNN_Train.gather_rpn_fast_rcnn_models(conf_proposal, conf_fast_rcnn, model, dataset);

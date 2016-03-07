@@ -26,29 +26,30 @@ try
     clear ld;
 catch
     %% init net
-    % init caffe net
-    mkdir_if_missing(cache_dir);
-    caffe_log_file_base = fullfile(cache_dir, 'caffe_log');
+    % init caffe log
+    mkdir_if_missing([cache_dir '/caffe_log']);
+    caffe_log_file_base = fullfile(cache_dir, 'caffe_log/test_');
     caffe.init_log(caffe_log_file_base);
+    % init caffe net
     caffe_net = caffe.Net(opts.net_def_file, 'test');
     caffe_net.copy_from(opts.net_file);
     
-    % init log
+    % init matlab log
     timestamp = datestr(datevec(now()), 'yyyymmdd_HHMMSS');
-    mkdir_if_missing(fullfile(cache_dir, 'log'));
-    log_file = fullfile(cache_dir, 'log', ['test_', timestamp, '.txt']);
+    mkdir_if_missing(fullfile(cache_dir, 'matlab_log'));
+    log_file = fullfile(cache_dir, 'matlab_log', ['test_', timestamp, '.txt']);
     diary(log_file);
     
     % set random seed
     prev_rng = seed_rand(conf.rng_seed);
     caffe.set_random_seed(conf.rng_seed);
     
-%     % set gpu/cpu
-%     if conf.use_gpu
-%         caffe.set_mode_gpu();
-%     else
-%         caffe.set_mode_cpu();
-%     end
+    %     % set gpu/cpu
+    %     if conf.use_gpu
+    %         caffe.set_mode_gpu();
+    %     else
+    %         caffe.set_mode_cpu();
+    %     end
     
     disp('opts:');
     disp(opts);

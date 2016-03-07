@@ -112,7 +112,7 @@ catch
             try
                 rec = VOCreadrecxml(anno_file, hash);
             catch
-                rec = [];exclude_difficult_samples
+                rec = []; %exclude_difficult_samples
             end
             if ~isempty(regions)
                 [~, image_name1] = fileparts(imdb.image_ids{i*2-1});
