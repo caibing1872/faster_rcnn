@@ -5,7 +5,11 @@ function startup()
 % Copyright (c) 2015, Shaoqing Ren
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
-    
+
+% Shall fix error: An unexpected error occurred during CUDA execution. The
+% CUDA error was: cannot set while device is active in this process.
+%     a = gpuArray(1); 
+%     clear a;
     curdir = fileparts(mfilename('fullpath'));
     addpath(genpath(fullfile(curdir, 'utils')));
     addpath(genpath(fullfile(curdir, 'functions')));

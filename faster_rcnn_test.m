@@ -1,6 +1,7 @@
 % neat version of the faster_rcnn_test pipeline
 
-close all; clear; %clc;
+close all; clear; 
+%clc;
 %run(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'startup'));
 run('./startup');
 
@@ -12,14 +13,14 @@ model_dir = fullfile(pwd, 'output', 'faster_rcnn_final', 'faster_rcnn_VOC0712_vg
 
 %% init
 opts.caffe_version          = 'caffe_faster_rcnn';
-opts.gpu_id                 = 0;%auto_select_gpu;
+opts.gpu_id                 = 0;    %auto_select_gpu;
 opts.per_nms_topN           = 6000;
 opts.nms_overlap_thres      = 0.7;
 opts.after_nms_topN         = 300;
 opts.use_gpu                = true;
 opts.test_scales            = 600;
 
-% load model
+% load model and configuration
 proposal_detection_model = load_proposal_detection_model(model_dir);
 proposal_detection_model.conf_proposal.test_scales = opts.test_scales;
 proposal_detection_model.conf_detection.test_scales = opts.test_scales;
@@ -45,23 +46,29 @@ fast_rcnn_net.copy_from(proposal_detection_model.detection_net);
 %% -------------------- WARM UP --------------------
 % the first run will be slower; use an empty image to warm up
 
-% for j = 1:2 % we warm up 2 times
-%     im = uint8(ones(375, 500, 3)*128);
-%     if opts.use_gpu
-%         im = gpuArray(im);
-%     end
-%     [boxes, scores]             = proposal_im_detect(proposal_detection_model.conf_proposal, rpn_net, im);
-%     aboxes                      = boxes_filter([boxes, scores], opts.per_nms_topN, opts.nms_overlap_thres, opts.after_nms_topN, opts.use_gpu);
-%     if proposal_detection_model.is_share_feature
-%         [boxes, scores]             = fast_rcnn_conv_feat_detect(proposal_detection_model.conf_detection, fast_rcnn_net, im, ...
-%             rpn_net.blobs(proposal_detection_model.last_shared_output_blob_name), ...
-%             aboxes(:, 1:4), opts.after_nms_topN);
-%     else
-%         [boxes, scores]             = fast_rcnn_im_detect(proposal_detection_model.conf_detection, fast_rcnn_net, im, ...
-%             aboxes(:, 1:4), opts.after_nms_topN);
-%     end
-% end
+for j = 1:2 % we warm up 2 times
+    im = uint8(ones(375, 500, 3)*128);
+    if opts.use_gpu
+        im = gpuArray(im);
+    end
+    [boxes, scores] = proposal_im_detect(proposal_detection_model.conf_proposal, ...
+        rpn_net, im);
+    aboxes = boxes_filter([boxes, scores], opts.per_nms_topN, ...
+        opts.nms_overlap_thres, opts.after_nms_topN);
+    
+    if proposal_detection_model.is_share_feature
+        [boxes, scores] = fast_rcnn_conv_feat_detect(...
+            proposal_detection_model.conf_detection, fast_rcnn_net, im, ...
+            rpn_net.blobs(proposal_detection_model.last_shared_output_blob_name), ...
+            aboxes(:, 1:4), opts.after_nms_topN);
+    else
+        [boxes, scores] = fast_rcnn_im_detect(...
+            proposal_detection_model.conf_detection, fast_rcnn_net, im, ...
+            aboxes(:, 1:4), opts.after_nms_topN);
+    end
+end
 
+%% -------------------- Actual Eval --------------------
 % running_time = [];
 for j = 1:length(im_dir)
     

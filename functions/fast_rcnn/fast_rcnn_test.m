@@ -206,13 +206,13 @@ for rois_num = 500:500:5000
     caffe_net.reshape_as_input(net_inputs);
     
     caffe_net.forward(net_inputs);
-    gpuInfo = gpuDevice();
+%     gpuInfo = gpuDevice();
     
     max_rois_num = rois_num;
     
-    if gpuInfo.FreeMemory < 2 * 10^9  % 2GB for safety
-        break;
-    end
+%     if gpuInfo.FreeMemory < 2 * 10^9  % 2GB for safety
+%         break;
+%     end
 end
 
 end

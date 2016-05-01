@@ -20,6 +20,7 @@ imdb/cache
 *.caffemodel
 *.mat
 *.m~
+local/
 
 # Windows Installer files
 *.cab

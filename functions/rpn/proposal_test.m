@@ -1,10 +1,6 @@
 function aboxes = proposal_test(conf, imdb, varargin)
 % aboxes = proposal_test(conf, imdb, varargin)
 % --------------------------------------------------------
-% Faster R-CNN
-% Copyright (c) 2015, Shaoqing Ren
-% Licensed under The MIT License [see LICENSE for details]
-% --------------------------------------------------------
 
 %% inputs
 ip = inputParser;
@@ -43,14 +39,7 @@ catch
     % set random seed
     prev_rng = seed_rand(conf.rng_seed);
     caffe.set_random_seed(conf.rng_seed);
-    
-    %     % set gpu/cpu
-    %     if conf.use_gpu
-    %         caffe.set_mode_gpu();
-    %     else
-    %         caffe.set_mode_cpu();
-    %     end
-    
+        
     disp('opts:');
     disp(opts);
     disp('conf:');

@@ -7,44 +7,53 @@ try
     aboxes = ld.aboxes;
     clear ld;
 catch
-    % save 'aboxes' in the cache, like:
-    %   rpn_cachedir/ilsvrc13_vgg_stage1_rpn/ilsvrc13_val1/proposal_boxes_ilsvrc13_val1.mat
+    % save 'aboxes' in the cache:
+    %   proposal_boxes_ilsvrc13_val1.mat
+    % ==============
+    % ==== TEST ====
     aboxes = proposal_test(conf, imdb, ...
         'net_def_file',     model_stage.test_net_def_file, ...
         'net_file',         model_stage.output_model_file, ...
         'cache_name',       model_stage.cache_name);
     
-    % the following is extremely time-consuming
+    % NMS, the following is extremely time-consuming
     aboxes = boxes_filter(aboxes, model_stage.nms.per_nms_topN, ...
         model_stage.nms.nms_overlap_thres, model_stage.nms.after_nms_topN, conf.use_gpu);
+    % aboxes: 4952 x 1 cell, each entry: 
     save(fullfile(cache_dir, ['aboxes_filtered_' imdb.name '.mat']), 'aboxes', '-v7.3');
 end
 
-roidb_regions = make_roidb_regions(aboxes, imdb.image_ids);
+if 0
+    % currently not in use
+    roidb_regions.boxes = aboxes;
+    roidb_regions.images = imdb.image_ids;
 
-% update: change some code to save memory
-try
-    ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
-    rois = ld.rois;
-    assert(length(rois) == length(roidb.rois));
-    clear ld;
-catch
-    fprintf('update roidb/rois during test, again, taking quite a while (brew some coffe or take a walk!:)...\n');
-    
-    roidb_from_proposal(imdb, roidb, roidb_regions, 'keep_raw_proposal', false, 'mat_file_prefix', cache_dir);
-    
-    ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
-    rois = ld.rois;
-    assert(length(rois) == length(roidb.rois));
-    clear ld;
+    % update: change some code to save memory
+    try
+        ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
+        rois = ld.rois;
+        assert(length(rois) == length(roidb.rois));
+        clear ld;
+    catch
+        fprintf('update roidb/rois during test, again, taking quite a while (brew some coffe or take a walk!:)...\n');
+
+        % save the file 'trick_new_roidb.mat'
+        roidb_from_proposal(imdb, roidb, roidb_regions, 'keep_raw_proposal', false, 'mat_file_prefix', cache_dir);    
+        ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
+        rois = ld.rois;
+        assert(length(rois) == length(roidb.rois));
+        clear ld;
+    end
+    roidb_new.rois = rois;
 end
-roidb_new.rois = rois;
 
 end
 
 function aboxes = boxes_filter(aboxes, per_nms_topN, nms_overlap_thres, after_nms_topN, use_gpu)
 
-% to speed up nms
+% to speed up nms (current = -1)
+% nms_overlap_thres = 0.7
+% after_nms_topN = 2000
 if per_nms_topN > 0
     aboxes = cellfun(@(x) x(1:min(length(x), per_nms_topN), :), aboxes, 'UniformOutput', false);
 end
@@ -68,7 +77,3 @@ if after_nms_topN > 0
 end
 end
 
-function regions = make_roidb_regions(aboxes, images)
-regions.boxes = aboxes;
-regions.images = images;
-end

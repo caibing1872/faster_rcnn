@@ -1,10 +1,6 @@
 function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
-% save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
-% --------------------------------------------------------
-% Faster R-CNN
-% Copyright (c) 2015, Shaoqing Ren
-% Licensed under The MIT License [see LICENSE for details]
-% --------------------------------------------------------
+% revisit by hyli
+
 %% -------------------- CONFIG --------------------
 % inputs
 ip = inputParser;
@@ -54,13 +50,6 @@ diary(log_file);
 % set random seed
 prev_rng = seed_rand(conf.rng_seed);
 caffe.set_random_seed(conf.rng_seed);
-
-%     % set gpu/cpu
-%     if conf.use_gpu
-%         caffe.set_mode_gpu();
-%     else
-%         caffe.set_mode_cpu();
-%     end
 
 disp('conf:');
 disp(conf);
@@ -143,7 +132,7 @@ end
 
 % final validation
 if opts.do_val
-    do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
+    val_res = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
 end
 % final snapshot
 snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));

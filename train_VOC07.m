@@ -5,7 +5,7 @@
 clc; clear;
 run('./startup');
 %% init
-fprintf('\n***************\ninit model,conf,dataset \n***************\n');
+fprintf('\n***************\ninit model and dataset configuration\n***************\n');
 opts.caffe_version          = 'caffe_faster_rcnn';
 opts.gpu_id                 = 0;
 opts.do_val                 = true;

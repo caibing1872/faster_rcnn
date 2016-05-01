@@ -30,7 +30,6 @@ input_dim: 36  		# 4 * 9(anchors)
 input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
 input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
 
-
 layer {
 	bottom: "data"
 	top: "conv1_1"

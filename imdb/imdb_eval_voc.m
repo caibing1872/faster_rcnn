@@ -36,6 +36,10 @@ end
 
 conf.cache_dir = fullfile('output', 'fast_rcnn_cachedir', cache_name, imdb.name);
 VOCopts  = imdb.details.VOCopts;
+% added by hyli
+VOCopts.annocachepath = [VOCopts.localdir '%s_anno.mat'];
+mkdir(fileparts(VOCopts.annocachepath));
+
 image_ids = imdb.image_ids;
 test_set = VOCopts.testset;
 year = VOCopts.dataset(4:end);
@@ -53,6 +57,7 @@ else
 end
 res_fn = sprintf(VOCopts.detrespath, res_id, cls);
 
+mkdir(fileparts(res_fn));
 % write out detections in PASCAL format and score
 fid = fopen(res_fn, 'w');
 for i = 1:length(image_ids);

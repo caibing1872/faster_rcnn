@@ -30,7 +30,7 @@ if ~opts.keep_raw_proposal
     end
 end
 
-%chunk = 2000;       % takes 20G
+% chunk = 2000 takes 20G ROM
 chunk = 500;
 mat_name = fullfile(opts.mat_file_prefix, 'trick_new_roidb.mat');
 m = matfile(mat_name, 'Writable', true);
@@ -74,25 +74,28 @@ for i = 1 : ceil(length(rois)/chunk)
             temp(kk).overlap(:, gt_classes(j)) = ...
                 max( full( temp(kk).overlap(:, gt_classes(j)) ), boxoverlap(all_boxes, gt_boxes(j, :)) );
         end
-        
+        temp(kk).overlap = sparse(double( temp(kk).overlap ));
     end
     m.rois(1, start_ind : end_ind) = temp;
 end
 
+% ========= the original code =========
+% =====================================
+% % add new proposal boxes
 % for i = 1:length(rois)
 %     [~, image_name1] = fileparts(imdb.image_ids{i});
 %     [~, image_name2] = fileparts(opts.regions.images{i});
 %     assert(strcmp(image_name1, image_name2));
-%
+% 
 %     boxes = opts.regions.boxes{i}(:, 1:4);
 %     is_gt = rois(i).gt;
 %     gt_boxes = rois(i).boxes(is_gt, :);
 %     gt_classes = rois(i).class(is_gt, :);
 %     all_boxes = cat(1, rois(i).boxes, boxes);
-%
+% 
 %     num_gt_boxes = size(gt_boxes, 1);
 %     num_boxes = size(boxes, 1);
-%
+% 
 %     rois(i).gt = cat(1, rois(i).gt, false(num_boxes, 1));
 %     rois(i).overlap = cat(1, rois(i).overlap, zeros(num_boxes, size(rois(i).overlap, 2)));
 %     rois(i).boxes = cat(1, rois(i).boxes, boxes);
@@ -101,7 +104,9 @@ end
 %         rois(i).overlap(:, gt_classes(j)) = ...
 %             max(full(rois(i).overlap(:, gt_classes(j))), boxoverlap(all_boxes, gt_boxes(j, :)));
 %     end
+%     % this is inspired by shwang
+%     rois(i).overlap = sparse(double(rois(i).overlap));
 % end
-%roidb.rois = rois;
+% roidb.rois = rois;
 
 end

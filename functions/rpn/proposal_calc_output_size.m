@@ -25,6 +25,7 @@ function [output_width_map, output_height_map] = proposal_calc_output_size(conf,
         net_inputs = {im_blob};
 
         % Reshape net's input blobs
+        %size(net_inputs)
         caffe_net.reshape_as_input(net_inputs);
         caffe_net.forward(net_inputs);
         
