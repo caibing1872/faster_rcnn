@@ -2,13 +2,13 @@ function model = VGG19_voc07(model)
 % VGG 16layers (only finetuned from conv3_1)
 
 model.mean_image                                = fullfile(pwd, 'models', 'pre_trained_models', 'vgg_16layers', 'mean_image');
-model.pre_trained_net_file                      = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19', 'VGG_ILSVRC_19_layers.caffemodel');
+model.pre_trained_net_file                      = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19_to', 'VGG_ILSVRC_19_layers.caffemodel');
 % Stride in input image pixels at the last conv layer
 model.feat_stride                               = 16;
 
 %% stage 1 rpn, inited from pre-trained network
-model.stage1_rpn.solver_def_file                = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19', 'solver.prototxt');
-model.stage1_rpn.test_net_def_file              = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19', 'deploy.prototxt');
+model.stage1_rpn.solver_def_file                = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19_to', 'solver.prototxt');
+model.stage1_rpn.test_net_def_file              = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19_to', 'deploy.prototxt');
 model.stage1_rpn.init_net_file                  = model.pre_trained_net_file;
 
 % rpn test setting
