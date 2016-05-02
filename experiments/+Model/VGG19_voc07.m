@@ -1,5 +1,5 @@
 function model = VGG19_voc07(model)
-% VGG 16layers (only finetuned from conv3_1)
+% VGG 19layers (only finetuned from conv3_1)
 
 model.mean_image                                = fullfile(pwd, 'models', 'pre_trained_models', 'vgg_16layers', 'mean_image');
 model.pre_trained_net_file                      = fullfile(pwd, 'models', 'rpn_prototxts', 'vgg19_to', 'VGG_ILSVRC_19_layers.caffemodel');

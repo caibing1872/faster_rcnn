@@ -1,5 +1,5 @@
 function roidb_new = do_proposal_test(conf, model_stage, imdb, roidb)
-
+roidb_new = [];
 % revised by hyli
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model_stage.cache_name, imdb.name);
 try

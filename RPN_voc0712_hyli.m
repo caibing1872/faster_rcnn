@@ -19,27 +19,33 @@ caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 
-% load paramters from the 'models' folder
+opts.debug = false;
+% === MODEL:: load paramters from the 'models' folder
 % it's the same among datasets
 model = Model.VGG19_voc07;        
 cache_base_proposal = 'VOC0712_vgg19';
+% cache_base_proposal = 'VOC07_vgg19';
+
+% model = Model.VGG16_for_Faster_RCNN_VOC2007;
+% cache_base_proposal = 'VOC07_vgg';
 
 cache_base_fast_rcnn = '';
 model = Faster_RCNN_Train.set_cache_folder(...
     cache_base_proposal, cache_base_fast_rcnn, model);
 
-% train/test data
+% config
+[ conf_proposal, conf_fast_rcnn ] = ...
+    Faster_RCNN_Train.set_config( cache_base_proposal, model );
+
+% === DATA:: train/test data
 % init:
 %   imdb_train, roidb_train, cell;
 %   imdb_test, roidb_test, struct
 dataset = [];
 use_flipped = true;
 dataset = Dataset.voc0712_trainval(dataset, 'train', use_flipped);
+%dataset = Dataset.voc2007_trainval(dataset, 'train', use_flipped);
 dataset = Dataset.voc2007_test(dataset, 'test', false);
-
-% config
-[ conf_proposal, conf_fast_rcnn ] = ...
-    Faster_RCNN_Train.set_config( cache_base_proposal, model );
 
 %%  stage one proposal
 fprintf('\n\nStage one proposal...\n');
@@ -51,7 +57,8 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'roidb_val',        dataset.roidb_test, ...
     'solver_def_file',  model.stage1_rpn.solver_def_file, ...
     'net_file',         model.stage1_rpn.init_net_file, ...
-    'cache_name',       model.stage1_rpn.cache_name);
+    'cache_name',       model.stage1_rpn.cache_name, ...
+    'debug',            opts.debug);
 
 % test
 % dataset.roidb_train = cellfun(@(x, y) ...

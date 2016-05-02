@@ -16,18 +16,22 @@ ip.addParameter('snapshot_interval',    10000,              @isscalar);
 % Max pixel size of a scaled input image
 ip.addParameter('solver_def_file',      fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'solver.prototxt'), @isstr);
 ip.addParameter('net_file',             fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'Zeiler_conv5.caffemodel'), @isstr);
-ip.addParameter('cache_name',          'Zeiler_conv5', @isstr);
+ip.addParameter('cache_name',           'Zeiler_conv5',     @isstr);
+ip.addParameter('debug',                false,              @isscalar);
 
 ip.parse(conf, imdb_train, roidb_train, varargin{:});
 opts = ip.Results;
+debug = opts.debug;
 
-%% if the trained model is saved, skip the following and return
 imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
-cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
-% the famous 'final.caffemodel'
-save_model_path = fullfile(cache_dir, 'final');
-if exist(save_model_path, 'file')
-    return;
+%% if the trained model is saved, skip the following and return
+if ~opts.debug
+    cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
+    % the famous 'final.caffemodel'
+    save_model_path = fullfile(cache_dir, 'final');
+    if exist(save_model_path, 'file')
+        return;
+    end
 end
 
 %% init
@@ -57,24 +61,59 @@ disp('opts:');
 disp(opts);
 
 % making tran/val data
-fprintf('Preparing training data...');
-[image_roidb_train, bbox_means, bbox_stds]...
-    = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
-fprintf('Done.\n');
-
-if opts.do_val
-    fprintf('Preparing validation data...');
-    [image_roidb_val]...
-        = proposal_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
-    fprintf('Done.\n');
-    
-    % fix validation data
-    shuffled_inds_val   = generate_random_minibatch([], image_roidb_val, conf.ims_per_batch);
-    shuffled_inds_val   = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
+mkdir('./output/training_test_data/');
+train_data_name_str = [];
+for i = 1:length(opts.imdb_train)
+    if i == length(opts.imdb_train)
+        curr_name = opts.imdb_train{i}.name;
+    else
+        curr_name = [opts.imdb_train{i}.name '_'];
+    end
+    train_data_name_str = [train_data_name_str curr_name];
 end
 
-conf.classes        = opts.imdb_train{1}.classes;
+try
+    ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
+    fprintf('Loading existant training data (%s) ...', train_data_name_str);
+    image_roidb_train = ld.image_roidb_train;
+    clear ld;
+    fprintf(' Done.\n');
+catch
+    fprintf('Preparing training data (%s) ...', train_data_name_str);
+    [image_roidb_train, bbox_means, bbox_stds]...
+        = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
+    save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'image_roidb_train');
+    fprintf(' Done and saved.\n');
+end
 
+if opts.do_val
+    
+    try    
+        ld = load(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name));
+        fprintf('Loading existant validation data (%s) ...', opts.imdb_val.name);
+        image_roidb_val = ld.image_roidb_val;
+        shuffled_inds_val = ld.shuffled_inds_val;
+        clear ld;
+        fprintf(' Done.\n');
+    catch
+        
+        fprintf('Preparing validation data (%s) ...', opts.imdb_val.name);
+        [image_roidb_val]...
+            = proposal_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
+        % fix validation data
+        shuffled_inds_val   = generate_random_minibatch([], image_roidb_val, conf.ims_per_batch);
+        shuffled_inds_val   = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
+        
+        save(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), ...
+            'image_roidb_val', 'shuffled_inds_val');
+        fprintf(' Done and saved.\n');
+    end
+end
+
+
+
+
+conf.classes        = opts.imdb_train{1}.classes;
 % try to train/val with images which have maximum size potentially,
 % to validate whether the gpu memory is enough
 check_gpu_memory(conf, caffe_solver, opts.do_val);
@@ -106,7 +145,11 @@ while (iter_ < max_iter)
     rst = caffe_solver.net.get_output();
     rst = check_error(rst, caffe_solver);
     train_results = parse_rst(train_results, rst);
-    % check_loss(rst, caffe_solver, net_inputs);
+    if debug && ~mod(iter_, 20)
+        fprintf('iter: %d\n', iter_)
+        check_loss(rst, caffe_solver, net_inputs);
+        fprintf('\n');
+    end
     
     % do valdiation per val_interval iterations
     if ~mod(iter_, opts.val_interval)
@@ -125,14 +168,14 @@ while (iter_ < max_iter)
     end
     
     if ~mod(iter_, 100)
-        fprintf('iter %d\n', iter_);
+        fprintf('iter %d, loss %.4f\n', iter_, (10*rst(2).data + rst(3).data));
     end
     iter_ = caffe_solver.iter();
 end
 
 % final validation
 if opts.do_val
-    val_res = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
+    do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
 end
 % final snapshot
 snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
@@ -206,7 +249,7 @@ labels_weights = caffe_solver.net.blobs('labels_weights_reshape').get_data();
 
 accurate_fg = (cls_score(:, :, 2) > cls_score(:, :, 1)) & (labels == 1);
 accurate_bg = (cls_score(:, :, 2) <= cls_score(:, :, 1)) & (labels == 0);
-accurate = accurate_fg | accurate_bg;
+%accurate = accurate_fg | accurate_bg;
 accuracy_fg = sum(accurate_fg(:) .* labels_weights(:)) / (sum(labels_weights(labels == 1)) + eps);
 accuracy_bg = sum(accurate_bg(:) .* labels_weights(:)) / (sum(labels_weights(labels == 0)) + eps);
 
@@ -291,7 +334,7 @@ end
 end
 
 function check_loss(rst, caffe_solver, input_blobs)
-im_blob = input_blobs{1};
+%im_blob = input_blobs{1};
 labels_blob = input_blobs{2};
 label_weights_blob = input_blobs{3};
 bbox_targets_blob = input_blobs{4};
@@ -307,7 +350,6 @@ regression_loss = sum(regression_delta.* bbox_loss_weights_blob(:)) / size(regre
 confidence = caffe_solver.net.blobs('proposal_cls_score_reshape').get_data();
 labels = reshape(labels_blob, size(labels_blob, 1), []);
 label_weights = reshape(label_weights_blob, size(label_weights_blob, 1), []);
-
 confidence_softmax = bsxfun(@rdivide, exp(confidence), sum(exp(confidence), 3));
 confidence_softmax = reshape(confidence_softmax, [], 2);
 confidence_loss = confidence_softmax(sub2ind(size(confidence_softmax), 1:size(confidence_softmax, 1), labels(:)' + 1));

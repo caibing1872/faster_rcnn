@@ -52,8 +52,8 @@ num_images = length(image_roidb);
 % Infer number of classes from the number of columns in gt_overlaps
 image_roidb_cell = num2cell(image_roidb, 2);
 bbox_targets = cell(num_images, 1);
-%parfor i = 1:num_images
-for i = 1:num_images
+parfor i = 1:num_images
+%for i = 1:num_images
     % for fcn, anchors are concated as [channel, height, width], where channel is the fastest dimension.
     [anchors, im_scales] = proposal_locate_anchors(conf, image_roidb_cell{i}.im_size);
     

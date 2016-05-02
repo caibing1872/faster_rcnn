@@ -20,10 +20,11 @@ caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 
 % load paramters from the 'models' folder
-% model                       = Model.VGG19_voc07;
-% cache_base_proposal         = 'VOC07_vgg19';
-model                       = Model.VGG16_for_Faster_RCNN_VOC2007;
-cache_base_proposal         = 'VOC07_vgg';
+model                       = Model.VGG19_voc07;
+cache_base_proposal         = 'VOC07_vgg19';
+% model                       = Model.VGG16_for_Faster_RCNN_VOC2007;
+% cache_base_proposal         = 'VOC07_vgg';
+
 cache_base_fast_rcnn        = '';
 model                       = Faster_RCNN_Train.set_cache_folder(...
     cache_base_proposal, cache_base_fast_rcnn, model);
