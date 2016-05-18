@@ -9,6 +9,7 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # User Ingore
+external/caffe
 local/
 datasets/
 output/
