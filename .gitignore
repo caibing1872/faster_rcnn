@@ -10,12 +10,12 @@ $RECYCLE.BIN/
 
 # User Ingore
 #models/
-bin/
-data/
+#bin/
+#data/
 datasets/
-external
+external/CaffeMex
 output/
-cachedir/
+#cachedir/
 imdb/cache
 *.caffemodel
 *.mat
