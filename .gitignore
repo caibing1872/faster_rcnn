@@ -9,18 +9,13 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # User Ingore
-#models/
-bin/
-data/
+local/
 datasets/
-external
 output/
-cachedir/
 imdb/cache
 *.caffemodel
 *.mat
 *.m~
-local/
 
 # Windows Installer files
 *.cab
