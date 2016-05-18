@@ -16,7 +16,7 @@ function [output_width_map, output_height_map] = proposal_calc_output_size(conf,
 %         caffe.set_mode_cpu();
 %     end
     
-    input = 100:conf.max_size;
+    input = 1:conf.max_size;
     output_w = nan(size(input));
     output_h = nan(size(input));
     for i = 1:length(input)

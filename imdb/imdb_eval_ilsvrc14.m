@@ -1,4 +1,4 @@
-function res = imdb_eval_ilsvrc13(ignore, all_boxes, imdb, suffix)
+function res = imdb_eval_ilsvrc14(ignore, all_boxes, imdb, suffix)
 % res = imdb_eval_ilsvrc13(ignore, all_boxes, imdb, suffix)
 
 % AUTORIGHTS

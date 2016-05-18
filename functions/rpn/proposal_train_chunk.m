@@ -1,6 +1,5 @@
-function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
-% revisit by hyli
-% 
+function save_model_path = proposal_train_chunk(conf, imdb_train, roidb_train, varargin)
+% revisit by hyli for ilsvrc large dataset
 
 ip = inputParser;
 ip.addRequired('conf',                                      @isstruct);
@@ -59,25 +58,22 @@ disp('opts:');
 disp(opts);
 
 %% making or loading tran/val data for caffe training
-mkdir_if_missing('./output/training_test_data/');
+mkdir_if_missing('./output/training_test_data');
 % train
-try
-    ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
-    image_roidb_train = ld.image_roidb_train;
-    bbox_means = ld.bbox_means;
-    bbox_stds = ld.bbox_stds;
-    fprintf('Loading existant Caffe training data (%s) ...', train_data_name_str);
-    clear ld;
-    fprintf(' Done.\n');
-catch
-    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
-    [image_roidb_train, bbox_means, bbox_stds]...
-        = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
+if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
     
-    save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), ...
-        'image_roidb_train', 'bbox_means', 'bbox_stds');
-    fprintf(' Done and saved.\n\n');
+    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
+    conf.chunk_save_path = @(x) sprintf('./output/training_test_data/%s_c%d.mat', train_data_name_str, x);
+    % generate the training chunks
+    [bbox_means, bbox_stds] = ...
+        proposal_prepare_image_roidb_chunk(conf, opts.imdb_train, opts.roidb_train);
+    
+else
+    fprintf('Caffe training chunk data (%s) is out there!\n', train_data_name_str);
+    load(sprintf('./output/training_test_data/%s_c0.mat', train_data_name_str));
 end
+chunk_num = length(dir(sprintf('./output/training_test_data/%s_c*.mat', train_data_name_str))) - 1;
+
 % test
 if opts.do_val   
     try    
@@ -87,8 +83,8 @@ if opts.do_val
         shuffled_inds_val = ld.shuffled_inds_val;
         clear ld;
         fprintf(' Done.\n');
-    catch
         
+    catch
         fprintf('Preparing Caffe validation data (%s) ...\n', opts.imdb_val.name);
         [image_roidb_val]...
             = proposal_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
@@ -119,17 +115,28 @@ iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
 th = tic;
 
+chunk_cnt = 0;
+
 while (iter_ < max_iter)
+    
     caffe_solver.net.set_phase('train');
     
     % generate minibatch training data
+    % load each chunk on the fly if 'shuffled_inds' is empty
+    % aka, update 'image_roidb'
+    if isempty(shuffled_inds)
+        chunk_cnt = chunk_cnt + 1;
+        fprintf(sprintf('\nloading train chunk #%d...\n', mod(chunk_cnt, chunk_num)+1));
+        load(sprintf( './output/training_test_data/%s_c%d.mat', ...
+            train_data_name_str, mod(chunk_cnt, chunk_num)+1 ));
+    end    
+        
     [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, ...
-        image_roidb_train, conf.ims_per_batch);
+        image_roidb, conf.ims_per_batch);
     
-    [net_inputs, ~] = proposal_generate_minibatch_fun(conf, ...
-        image_roidb_train(sub_db_inds));
+    [net_inputs, ~] = proposal_generate_minibatch_fun(conf, image_roidb(sub_db_inds));
     
-    % visual_debug_fun(conf, image_roidb_train(sub_db_inds), ...
+    % visual_debug_fun(conf, image_roidb(sub_db_inds), ...
     %           net_inputs, bbox_means, bbox_stds, conf.classes, scale_inds);
     caffe_solver.net.reshape_as_input(net_inputs);
     
@@ -148,7 +155,8 @@ while (iter_ < max_iter)
     % do valdiation per val_interval iterations
     if ~mod(iter_, opts.val_interval)
         if opts.do_val
-            val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
+            val_results = do_validation(conf, caffe_solver, ...
+                proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
         end
         
         show_state(iter_, train_results, val_results);
