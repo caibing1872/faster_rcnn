@@ -6,6 +6,8 @@ function startup()
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
 
+% note by hyli: refactor branch
+
 % Shall fix error: An unexpected error occurred during CUDA execution. The
 % CUDA error was: cannot set while device is active in this process.
 %     a = gpuArray(1); 
@@ -21,7 +23,7 @@ function startup()
 
     mkdir_if_missing(fullfile(curdir, 'external'));
 
-    caffe_path = fullfile(curdir, 'external', 'caffe', 'matlab');
+    caffe_path = fullfile(curdir, 'external', 'CaffeMex', 'matlab');
     if exist(caffe_path, 'dir') == 0
         error('matcaffe is missing from external/caffe/matlab; See README.md');
     end

@@ -23,6 +23,8 @@ Pass or Bug report: liuyu@sensetime.com
     Step2: edit `src/Makefile`, in `CXXFLAGS` add `-fPIC` and recompile
     Step3: enter root folder and make & make check & sudo make install
     Step4: sudo ldconfig
+    Step5: (optional) modify environment path if necessary. `/usr/local/bin/`, `which protoc`, `protoc --version`
+
 ```
 
 3.Make caffe with my Makefile.
