@@ -25,7 +25,7 @@ train_data_name_str = mk_train_str(opts.imdb_train);
 %% if the trained model is saved, skip the following and return
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
     opts.cache_name, train_data_name_str);
-if ~debug  
+if ~debug
     % the famous 'final.caffemodel'
     save_model_path = fullfile(cache_dir, 'final');
     if exist(save_model_path, 'file')
@@ -60,23 +60,47 @@ disp(opts);
 %% making or loading tran/val data for caffe training
 mkdir_if_missing('./output/training_test_data');
 % train
-if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
-    
-    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
-    conf.chunk_save_path = @(x) sprintf('./output/training_test_data/%s_c%d.mat', train_data_name_str, x);
-    % generate the training chunks
-    [bbox_means, bbox_stds] = ...
-        proposal_prepare_image_roidb_chunk(conf, opts.imdb_train, opts.roidb_train);
+chunk_mode = true;
+if length(opts.imdb_train) == 1
+    % only val1, not do use chunk mode
+    chunk_mode = false;
+    if ~exist(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'file')
+        
+        fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
+        [image_roidb, bbox_means, bbox_stds]...
+            = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
+        save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), ...
+            'image_roidb', 'bbox_means', 'bbox_stds');
+        fprintf(' Done and saved.\n\n');
+    else
+        ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
+        image_roidb = ld.image_roidb;
+        bbox_means = ld.bbox_means;
+        bbox_stds = ld.bbox_stds;
+        fprintf('Loading existant Caffe training data (%s) ...', train_data_name_str);
+        clear ld;
+        fprintf(' Done.\n');
+    end
     
 else
-    fprintf('Caffe training chunk data (%s) is out there!\n', train_data_name_str);
-    load(sprintf('./output/training_test_data/%s_c0.mat', train_data_name_str));
+    % chunk mode
+    if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
+        conf.chunk_save_path = @(x) sprintf('./output/training_test_data/%s_c%d.mat', train_data_name_str, x);
+        % generate the training chunks
+        [bbox_means, bbox_stds] = ...
+            proposal_prepare_image_roidb_chunk(conf, opts.imdb_train, opts.roidb_train);
+    else
+        fprintf('Caffe training chunk data (%s) is out there!\n', train_data_name_str);
+        load(sprintf('./output/training_test_data/%s_c0.mat', train_data_name_str));
+    end
+    chunk_cnt = 0;
+    chunk_num = length(dir(sprintf('./output/training_test_data/%s_c*.mat', train_data_name_str))) - 1;
 end
-chunk_num = length(dir(sprintf('./output/training_test_data/%s_c*.mat', train_data_name_str))) - 1;
+
 
 % test
-if opts.do_val   
-    try    
+if opts.do_val
+    try
         ld = load(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name));
         fprintf('Loading existant Caffe validation data (%s) ...', opts.imdb_val.name);
         image_roidb_val = ld.image_roidb_val;
@@ -99,7 +123,11 @@ if opts.do_val
 end
 
 %%
-conf.classes        = opts.imdb_train{1}.classes;
+try
+    conf.classes        = opts.imdb_train{1}.classes;
+catch
+    warning('conf parameter does not have _classes_ field');
+end
 % try to train/val with images which have maximum size potentially,
 % to validate whether the gpu memory is enough
 check_gpu_memory(conf, caffe_solver, opts.do_val);
@@ -110,12 +138,11 @@ visual_debug_fun                = @proposal_visual_debug;
 
 shuffled_inds = [];
 train_results = [];
+train_res_total = [];
 val_results = [];
 iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
 th = tic;
-
-chunk_cnt = 0;
 
 while (iter_ < max_iter)
     
@@ -124,13 +151,13 @@ while (iter_ < max_iter)
     % generate minibatch training data
     % load each chunk on the fly if 'shuffled_inds' is empty
     % aka, update 'image_roidb'
-    if isempty(shuffled_inds)
+    if isempty(shuffled_inds) && chunk_mode
         chunk_cnt = chunk_cnt + 1;
         fprintf(sprintf('\nloading train chunk #%d...\n', mod(chunk_cnt, chunk_num)+1));
         load(sprintf( './output/training_test_data/%s_c%d.mat', ...
             train_data_name_str, mod(chunk_cnt, chunk_num)+1 ));
-    end    
-        
+    end
+    
     [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, ...
         image_roidb, conf.ims_per_batch);
     
@@ -146,6 +173,8 @@ while (iter_ < max_iter)
     rst = caffe_solver.net.get_output();
     rst = check_error(rst, caffe_solver);
     train_results = parse_rst(train_results, rst);
+    train_res_total = train_results;
+    
     if debug && ~mod(iter_, 20)
         fprintf('iter: %d\n', iter_)
         check_loss(rst, caffe_solver, net_inputs);
@@ -163,12 +192,12 @@ while (iter_ < max_iter)
         train_results = [];
         diary; diary; % flush diary
     end
-    
-    % snapshot
+    % save snapshot
     if ~mod(iter_, opts.snapshot_interval)
         snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
+        save([cache_dir 'loss.mat'], 'train_res_total', val_results);
     end
-    
+    % training progress report
     if ~mod(iter_, 100)
         time = toc(th);
         fprintf('iter %d, loss %.4f, time: %.2f min, estTime: %.2f hour\n', ...
@@ -193,21 +222,21 @@ rng(prev_rng);
 end
 
 function str = mk_train_str(imdb)
-    str = [];
-    
-    if length(imdb) >= 3
-        % it's the imagenet training data
-        str = 'ilsvrc14_train';
-    else
-        for i = 1:length(imdb)
-            if i == length(imdb)
-                curr_name = imdb.name;
-            else
-                curr_name = [imdb{i}.name '_'];
-            end
-            str = [str curr_name];
+str = [];
+
+if length(imdb) >= 3 || isempty(imdb{1})
+    % it's the imagenet training data
+    str = 'ilsvrc14_train';
+else
+    for i = 1:length(imdb)
+        if i == length(imdb)
+            curr_name = imdb{i}.name;
+        else
+            curr_name = [imdb{i}.name '_'];
         end
+        str = [str curr_name];
     end
+end
 end
 
 function val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)

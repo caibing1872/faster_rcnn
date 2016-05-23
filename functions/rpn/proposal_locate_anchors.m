@@ -23,8 +23,11 @@ end
 
 function [anchors, im_scale] = proposal_locate_anchors_single_scale(...
     image_roidb_cell_entry, conf, target_scale, feature_map_size)
-
-    im_size = image_roidb_cell_entry.im_size;
+    if isstruct(image_roidb_cell_entry)
+        im_size = image_roidb_cell_entry.im_size;
+    else
+        im_size = image_roidb_cell_entry;
+    end
     
     if isempty(feature_map_size)
         im_scale = prep_im_for_blob_size(im_size, target_scale, conf.max_size);

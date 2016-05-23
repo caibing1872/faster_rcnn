@@ -1,6 +1,6 @@
 # *Faster* R-CNN: Towards Real-Time Object Detection with Region Proposal Networks
 
-By Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun at Microsoft Research
+Master branch by hyli at CUHK.
 
 ### Introduction
 
@@ -14,20 +14,6 @@ This code has been tested on Windows 7/8 64-bit, Windows Server 2012 R2, and Lin
 
 Python version is available at [py-faster-rcnn](https://github.com/rbgirshick/py-faster-rcnn).
 
-### License
-
-Faster R-CNN is released under the MIT License (refer to the LICENSE file for details).
-
-### Citing Faster R-CNN
-
-If you find Faster R-CNN useful in your research, please consider citing:
-
-    @article{ren15fasterrcnn,
-        Author = {Shaoqing Ren, Kaiming He, Ross Girshick, Jian Sun},
-        Title = {{Faster R-CNN}: Towards Real-Time Object Detection with Region Proposal Networks},
-        Journal = {arXiv preprint arXiv:1506.01497},
-        Year = {2015}
-    }
 
 ### Main resutls
                           | training data                          | test data            | mAP   | time/img
