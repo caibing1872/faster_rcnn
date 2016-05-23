@@ -13,7 +13,9 @@ $RECYCLE.BIN/
 bin/
 data/
 datasets/
-external
+#external
+external/caffe/.build_release
+external/caffe_try
 output/
 cachedir/
 imdb/cache
