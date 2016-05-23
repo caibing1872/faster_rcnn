@@ -14,6 +14,27 @@ $RECYCLE.BIN/
 #data/
 datasets/
 external/CaffeMex
+
+external/caffe/data/*
+external/caffe/models/*
+*.caffemodel
+*.solverstate
+*.binaryproto
+*leveldb
+*lmdb
+
+# build, distribute, and bins (+ python proto bindings)
+external/caffe/build
+external/caffe/.build_debug/*
+external/caffe/.build_release/*
+external/caffe/distribute/*
+*.testbin
+*.bin
+external/caffe/python/caffe/proto/
+external/caffe/cmake_build
+external/caffe/.cmake_build
+
+
 output/
 #cachedir/
 imdb/cache
