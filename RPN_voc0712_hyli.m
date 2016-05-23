@@ -22,8 +22,8 @@ caffe.set_mode_gpu();
 opts.debug = false;
 % === MODEL:: load paramters from the 'models' folder
 % it's the same among datasets
-model = Model.VGG19_voc07;        
-cache_base_proposal = 'VOC0712_vgg19';
+model = Model.VGG16_for_Faster_RCNN_VOC2007;        
+cache_base_proposal = 'VOC0712_vgg16_NEW_139';
 % cache_base_proposal = 'VOC07_vgg19';
 
 % model = Model.VGG16_for_Faster_RCNN_VOC2007;
@@ -65,7 +65,7 @@ model.stage1_rpn.output_model_file = proposal_train(...
 %     Faster_RCNN_Train.do_proposal_test(conf_proposal, model.stage1_rpn, x, y), ...
 %     dataset.imdb_train, dataset.roidb_train, 'UniformOutput', false);
 
-dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
+ldataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
     model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);
 
 
