@@ -14,7 +14,7 @@ bin/
 data/
 datasets/
 #external
-external/caffe/.build_release
+#external/caffe/.build_release
 external/caffe_try
 output/
 cachedir/
