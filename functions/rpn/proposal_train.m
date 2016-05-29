@@ -1,11 +1,12 @@
 function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
 % revisit by hyli
-% 
+% all brand new
 
 ip = inputParser;
 ip.addRequired('conf',                                      @isstruct);
 ip.addRequired('imdb_train',                                @iscell);
 ip.addRequired('roidb_train',                               @iscell);
+ip.addRequired('train_key',                                 @isstr);
 ip.addParameter('do_val',               false,              @isscalar);
 ip.addParameter('imdb_val',             struct(),           @isstruct);
 ip.addParameter('roidb_val',            struct(),           @isstruct);
@@ -13,19 +14,21 @@ ip.addParameter('val_iters',            500,                @isscalar);
 ip.addParameter('val_interval',         2000,               @isscalar);
 ip.addParameter('snapshot_interval',    10000,              @isscalar);
 % Max pixel size of a scaled input image
-ip.addParameter('solver_def_file',      fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'solver.prototxt'), @isstr);
-ip.addParameter('net_file',             fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'Zeiler_conv5.caffemodel'), @isstr);
+ip.addParameter('solver_def_file',      '',                 @isstr);
+ip.addParameter('net_file',             '',                 @isstr);
 ip.addParameter('cache_name',           'Zeiler_conv5',     @isstr);
 ip.addParameter('debug',                false,              @isscalar);
-
+ip.addParameter('solverstate',          '',                 @isstr);
 ip.parse(conf, imdb_train, roidb_train, varargin{:});
 opts = ip.Results;
-debug = opts.debug;
-train_data_name_str = mk_train_str(opts.imdb_train);
 
-%% if the trained model is saved, skip the following and return
+debug = opts.debug;
+% train_data_name_str = mk_train_str(opts.imdb_train);
+train_data_name_str = opts.train_key;
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
     opts.cache_name, train_data_name_str);
+
+%% if the trained model is saved, skip the following and return
 if ~debug  
     % the famous 'final.caffemodel'
     save_model_path = fullfile(cache_dir, 'final');
@@ -39,10 +42,6 @@ end
 mkdir_if_missing([cache_dir '/caffe_log']);
 caffe_log_file_base = fullfile(cache_dir, 'caffe_log/train_');
 caffe.init_log(caffe_log_file_base);
-% init caffe solver
-caffe_solver = caffe.Solver(opts.solver_def_file);
-caffe_solver.net.copy_from(opts.net_file);
-
 % init matlab log
 timestamp = datestr(datevec(now()), 'yyyymmdd_HHMMSS');
 mkdir_if_missing(fullfile(cache_dir, 'matlab_log'));
@@ -57,6 +56,21 @@ disp('conf:');
 disp(conf);
 disp('opts:');
 disp(opts);
+
+% init caffe solver
+caffe_solver = caffe.Solver(opts.solver_def_file);
+
+if isempty(opts.solverstate)
+    caffe_solver.net.copy_from(opts.net_file);
+    % conf.classes        = opts.imdb_train{1}.classes;
+    % try to train/val with images which have maximum size potentially,
+    % to validate whether the gpu memory is enough
+    check_gpu_memory(conf, caffe_solver, opts.do_val);
+else
+    % loading solverstate
+    caffe_solver.restore(fullfile(cache_dir, ...
+        sprintf('%s.solverstate', opts.solverstate)));
+end
 
 %% making or loading tran/val data for caffe training
 mkdir_if_missing('./output/training_test_data/');
@@ -102,30 +116,25 @@ if opts.do_val
     end
 end
 
-%%
-conf.classes        = opts.imdb_train{1}.classes;
-% try to train/val with images which have maximum size potentially,
-% to validate whether the gpu memory is enough
-check_gpu_memory(conf, caffe_solver, opts.do_val);
-
 %% TRAINING
 proposal_generate_minibatch_fun = @proposal_generate_minibatch;
-visual_debug_fun                = @proposal_visual_debug;
+% visual_debug_fun                = @proposal_visual_debug;
 
 shuffled_inds = [];
 train_results = [];
+train_res_total = [];
 val_results = [];
 iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
 th = tic;
 
 while (iter_ < max_iter)
+    
     caffe_solver.net.set_phase('train');
     
     % generate minibatch training data
     [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, ...
         image_roidb_train, conf.ims_per_batch);
-    
     [net_inputs, ~] = proposal_generate_minibatch_fun(conf, ...
         image_roidb_train(sub_db_inds));
     
@@ -139,6 +148,8 @@ while (iter_ < max_iter)
     rst = caffe_solver.net.get_output();
     rst = check_error(rst, caffe_solver);
     train_results = parse_rst(train_results, rst);
+    train_res_total = parse_rst(train_res_total, rst);
+    
     if debug && ~mod(iter_, 20)
         fprintf('iter: %d\n', iter_)
         check_loss(rst, caffe_solver, net_inputs);
@@ -149,8 +160,7 @@ while (iter_ < max_iter)
     if ~mod(iter_, opts.val_interval)
         if opts.do_val
             val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
-        end
-        
+        end     
         show_state(iter_, train_results, val_results);
         train_results = [];
         diary; diary; % flush diary
@@ -159,8 +169,9 @@ while (iter_ < max_iter)
     % snapshot
     if ~mod(iter_, opts.snapshot_interval)
         snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
+        save([cache_dir '/' 'loss.mat'], 'train_res_total', 'val_results');
     end
-    
+    % training progress report
     if ~mod(iter_, 100)
         time = toc(th);
         fprintf('iter %d, loss %.4f, time: %.2f min, estTime: %.2f hour\n', ...
@@ -306,6 +317,8 @@ end
 end
 
 function model_path = snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, file_name)
+
+% save the intermediate result
 anchor_size = size(conf.anchors, 1);
 bbox_stds_flatten = repmat(reshape(bbox_stds', [], 1), anchor_size, 1);
 bbox_means_flatten = repmat(reshape(bbox_means', [], 1), anchor_size, 1);
@@ -325,9 +338,12 @@ biase = ...
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights);
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 2, biase);
 
-model_path = fullfile(cache_dir, file_name);
+model_path = [fullfile(cache_dir, file_name) '.caffemodel'];
 caffe_solver.net.save(model_path);
-fprintf('Saved as %s\n', model_path);
+fprintf('Saved as %s\n', [file_name '.caffemodel']);
+solverstate_path = [fullfile(cache_dir, file_name) '.solverstate'];
+caffe_solver.snapshot(solverstate_path, model_path);
+fprintf('Saved as %s\n', [file_name '.solverstate']);
 
 % restore net to original state
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights_back);

@@ -6,15 +6,6 @@ function roidb = roidb_from_ilsvrc14(imdb,varargin)
 %
 %   Inspired by Andrea Vedaldi's MKL imdb and roidb code.
 
-% AUTORIGHTS
-% ---------------------------------------------------------
-% Copyright (c) 2014, Ross Girshick
-%
-% This file is part of the R-CNN code and is available
-% under the terms of the Simplified BSD License provided in
-% LICENSE. Please retain this notice and LICENSE if you use
-% this file (or any portion of it) in your project.
-% ---------------------------------------------------------
 ip = inputParser;
 ip.addRequired('imdb', @isstruct);
 ip.addParamValue('exclude_difficult_samples',       false,   @islogical);
@@ -156,8 +147,7 @@ if isfield(ilsvrc_rec, 'objects') && ~isempty(ilsvrc_rec.objects)
         valid_objects = ~cat(1, ilsvrc_rec.objects(:).difficult);
     else
         valid_objects = 1:length(ilsvrc_rec.objects(:));
-    end
-    
+    end    
     gt_boxes = cat(1, ilsvrc_rec.objects(valid_objects).bbox);
     %%% ============ NOTE ==============
     % coordinate starts from 0 in ilsvrc

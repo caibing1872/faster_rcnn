@@ -58,13 +58,13 @@ catch
     count = 0;
     for i = 1:num_images
         count = count + 1;
-        fprintf('%s: test (%s) %d/%d ', procid(), imdb.name, count, num_images);
+        tic_toc_print('%s: test (%s) %d/%d \n', procid(), imdb.name, count, num_images);
         th = tic;
         im = imread(imdb.image_at(i));
         
         [boxes, scores, abox_deltas{i}, aanchors{i}, ascores{i}] = proposal_im_detect(conf, caffe_net, im);
         
-        fprintf(' time: %.3fs\n', toc(th));
+        %fprintf(' time: %.3fs\n', toc(th));
         
         aboxes{i} = [boxes, scores];
     end

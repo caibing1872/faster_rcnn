@@ -17,7 +17,7 @@ catch
         'cache_name',       model_stage.cache_name);
     
     % NMS, the following is extremely time-consuming
-    aboxes = boxes_filter(aboxes, model_stage.nms.per_nms_topN, ...
+    aboxes = boxes_filter_inline(aboxes, model_stage.nms.per_nms_topN, ...
         model_stage.nms.nms_overlap_thres, model_stage.nms.after_nms_topN, conf.use_gpu);
     % aboxes: 4952 x 1 cell, each entry: 
     save(fullfile(cache_dir, ['aboxes_filtered_' imdb.name '.mat']), 'aboxes', '-v7.3');
@@ -49,7 +49,7 @@ end
 
 end
 
-function aboxes = boxes_filter(aboxes, per_nms_topN, nms_overlap_thres, after_nms_topN, use_gpu)
+function aboxes = boxes_filter_inline(aboxes, per_nms_topN, nms_overlap_thres, after_nms_topN, use_gpu)
 
 % to speed up nms (current = -1)
 % nms_overlap_thres = 0.7

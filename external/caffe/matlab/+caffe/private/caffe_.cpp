@@ -608,6 +608,16 @@ static void read_mean(MEX_ARGS) {
   mxFree(mean_proto_file);
 }
 
+// Usage: caffe_('snapshot', hSolver, solver_name, model_name)
+static void snapshot(MEX_ARGS) {
+  mxCHECK(nrhs == 3 && mxIsStruct(prhs[0]),
+      "Usage: caffe_('snapshot', hSolver, solver_name, model_name)");
+  Solver<float>* solver = handle_to_ptr<Solver<float> >(prhs[0]);
+  string solver_name(mxArrayToString(prhs[1]));
+  string model_name(mxArrayToString(prhs[2]));
+  solver->MatCaffeSnapshot(solver_name, model_name);
+}
+
 /** -----------------------------------------------------------------
  ** Available commands.
  **/
@@ -651,6 +661,7 @@ static handler_registry handlers[] = {
   { "init_log",                      init_log                       },
   { "reset",                         reset                          },
   { "read_mean",                     read_mean                      },
+  { "snapshot",                      snapshot                       },
   // The end.
   { "END",                           NULL                           },
 };

@@ -698,6 +698,23 @@ void NesterovSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
 }
 
 template <typename Dtype>
+void SGDSolver<Dtype>::MatCaffeSnapshot(const string& solver_name, const string& model_name) {
+   SolverState state;
+   state.set_iter(this->iter_);
+   state.set_learned_net(model_name);
+   state.set_current_step(this->current_step_);
+   state.clear_history();
+   for (int i = 0; i < history_.size(); ++i) {
+     // Add history
+     BlobProto* history_blob = state.add_history();
+     history_[i]->ToProto(history_blob);
+   }
+   LOG(INFO)
+     << "Snapshotting solver state to binary proto file" << solver_name;
+   WriteProtoToBinaryFile(state, solver_name.c_str());
+}
+
+template <typename Dtype>
 void AdaGradSolver<Dtype>::ComputeUpdateValue(int param_id, Dtype rate) {
   const vector<shared_ptr<Blob<Dtype> > >& net_params = this->net_->params();
   const vector<float>& net_params_lr = this->net_->params_lr();

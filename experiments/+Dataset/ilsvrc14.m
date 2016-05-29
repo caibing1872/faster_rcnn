@@ -17,16 +17,26 @@ switch usage
         dataset.roidb_train = cellfun(@(x) x.roidb_func(x), ...
             dataset.imdb_train, 'UniformOutput', false);
         
+    case {'train14'}
+        % IN SERVICE
+        % we use all the 2014 training pos and val1 
+        dataset.imdb_train{1,1} = imdb_from_ilsvrc14(root_path, 'val1', use_flip);
+        dataset.imdb_train{2,1} = imdb_from_ilsvrc14(root_path, 'train14', use_flip);
+        dataset.roidb_train = cellfun(@(x) x.roidb_func(x), ...
+            dataset.imdb_train, 'UniformOutput', false);
+        
     case {'train_val1'}
         
         dataset.imdb_train{1,1} = imdb_from_ilsvrc14(root_path, 'val1', use_flip);
         dataset.roidb_train = cellfun(@(x) x.roidb_func(x), dataset.imdb_train, 'UniformOutput', false);
         
     case {'test'}
+        % IN SERVICE
         dataset.imdb_test     = imdb_from_ilsvrc14(root_path, 'val2', false);
         dataset.roidb_test    = dataset.imdb_test.roidb_func(dataset.imdb_test);
+        
     otherwise
-        error('usage = ''train'' or ''test''');
+        error('usage = ''train14'' or ''test''');
 end
 
 end

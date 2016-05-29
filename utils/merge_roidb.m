@@ -1,4 +1,4 @@
-
+% deprecated now
 num_chunk = 4;
 image_roidb = [];
 

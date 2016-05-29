@@ -1,5 +1,6 @@
 function save_model_path = proposal_train_chunk(conf, imdb_train, roidb_train, varargin)
 % revisit by hyli for ilsvrc large dataset
+% almost deprecated
 
 ip = inputParser;
 ip.addRequired('conf',                                      @isstruct);
@@ -61,8 +62,22 @@ disp(opts);
 mkdir_if_missing('./output/training_test_data');
 % train
 chunk_mode = true;
-if length(opts.imdb_train) == 1
-    % only val1, not do use chunk mode
+if length(opts.imdb_train) >= 3 && strcmp(opts.imdb_train{2}.name, 'ilsvrc14_train_pos_1')
+    % chunk mode, only the 'train' case
+    if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
+        conf.chunk_save_path = @(x) sprintf('./output/training_test_data/%s_c%d.mat', train_data_name_str, x);
+        % generate the training chunks
+        [bbox_means, bbox_stds] = ...
+            proposal_prepare_image_roidb_chunk(conf, opts.imdb_train, opts.roidb_train);
+    else
+        fprintf('Caffe training chunk data (%s) is out there!\n', train_data_name_str);
+        load(sprintf('./output/training_test_data/%s_c0.mat', train_data_name_str));
+    end
+    chunk_cnt = 0;
+    chunk_num = length(dir(sprintf('./output/training_test_data/%s_c*.mat', train_data_name_str))) - 1;
+    
+else
+    % val1 or train14 case, not do use chunk mode
     chunk_mode = false;
     if ~exist(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'file')
         
@@ -81,23 +96,7 @@ if length(opts.imdb_train) == 1
         clear ld;
         fprintf(' Done.\n');
     end
-    
-else
-    % chunk mode
-    if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
-        conf.chunk_save_path = @(x) sprintf('./output/training_test_data/%s_c%d.mat', train_data_name_str, x);
-        % generate the training chunks
-        [bbox_means, bbox_stds] = ...
-            proposal_prepare_image_roidb_chunk(conf, opts.imdb_train, opts.roidb_train);
-    else
-        fprintf('Caffe training chunk data (%s) is out there!\n', train_data_name_str);
-        load(sprintf('./output/training_test_data/%s_c0.mat', train_data_name_str));
-    end
-    chunk_cnt = 0;
-    chunk_num = length(dir(sprintf('./output/training_test_data/%s_c*.mat', train_data_name_str))) - 1;
 end
-
-
 % test
 if opts.do_val
     try
@@ -144,6 +143,7 @@ iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
 th = tic;
 
+%caffe_solver.restore(fullfile(cache_dir, 'iter_2.solverstate'));
 while (iter_ < max_iter)
     
     caffe_solver.net.set_phase('train');
@@ -173,7 +173,7 @@ while (iter_ < max_iter)
     rst = caffe_solver.net.get_output();
     rst = check_error(rst, caffe_solver);
     train_results = parse_rst(train_results, rst);
-    train_res_total = train_results;
+    train_res_total = parse_rst(train_res_total, rst);
     
     if debug && ~mod(iter_, 20)
         fprintf('iter: %d\n', iter_)
@@ -195,7 +195,7 @@ while (iter_ < max_iter)
     % save snapshot
     if ~mod(iter_, opts.snapshot_interval)
         snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
-        save([cache_dir 'loss.mat'], 'train_res_total', val_results);
+        save([cache_dir '/' 'loss.mat'], 'train_res_total', 'val_results');
     end
     % training progress report
     if ~mod(iter_, 100)
@@ -226,7 +226,11 @@ str = [];
 
 if length(imdb) >= 3 || isempty(imdb{1})
     % it's the imagenet training data
-    str = 'ilsvrc14_train';
+    if strcmp(imdb{2}.name, 'ilsvrc14_train_pos_1_hyli')
+        str = 'ilsvrc14_train14';
+    else
+        str = 'ilsvrc14_train';
+    end
 else
     for i = 1:length(imdb)
         if i == length(imdb)
@@ -343,6 +347,8 @@ end
 end
 
 function model_path = snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, file_name)
+
+% save the intermediate result
 anchor_size = size(conf.anchors, 1);
 bbox_stds_flatten = repmat(reshape(bbox_stds', [], 1), anchor_size, 1);
 bbox_means_flatten = repmat(reshape(bbox_means', [], 1), anchor_size, 1);
@@ -362,9 +368,12 @@ biase = ...
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights);
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 2, biase);
 
-model_path = fullfile(cache_dir, file_name);
+model_path = [fullfile(cache_dir, file_name) '.caffemodel'];
 caffe_solver.net.save(model_path);
-fprintf('Saved as %s\n', model_path);
+fprintf('Saved as %s\n', [file_name '.caffemodel']);
+solverstate_path = [fullfile(cache_dir, file_name) '.solverstate'];
+caffe_solver.snapshot(solverstate_path, model_path);
+fprintf('Saved as %s\n', [file_name '.solverstate']);
 
 % restore net to original state
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights_back);

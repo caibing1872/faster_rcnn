@@ -38,6 +38,8 @@ class Solver {
   }
   int iter() { return iter_; }
   int max_iter() const { return param_.max_iter(); }
+  
+  virtual void MatCaffeSnapshot(const string& solver_name, const string& model_filename) {}
 
  protected:
   // Make and apply the update value for the current iteration.
@@ -77,6 +79,7 @@ class SGDSolver : public Solver<Dtype> {
       : Solver<Dtype>(param_file) { PreSolve(); }
 
   const vector<shared_ptr<Blob<Dtype> > >& history() { return history_; }
+  virtual void MatCaffeSnapshot(const string& solver_name, const string& model_name);
 
  protected:
   void PreSolve();
