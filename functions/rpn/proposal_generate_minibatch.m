@@ -70,7 +70,20 @@ function [im_blob, im_scales] = get_image_blob(conf, images, random_scale_inds)
     processed_ims = cell(num_images, 1);
     im_scales = nan(num_images, 1);
     for i = 1:num_images
-        im = imread(images(i).image_path);
+        %im = imread(images(i).image_path);   
+        try
+            im = imread(images(i).image_path);
+        catch lasterror         
+            % hah, annoying data issues
+            if strcmp(lasterror.identifier, 'MATLAB:imagesci:jpg:cmykColorSpace')
+                warning('converting %s from CMYK to RGB', images(i).image_at(i));
+                cmd = ['convert ' images(i).image_path ' -colorspace CMYK -colorspace RGB ' images(i).image_path];
+                system(cmd);
+                im = imread(images(i).image_path);
+            else
+                error(lasterror.message);
+            end
+        end
         target_size = conf.scales(random_scale_inds(i));
         
         [im, im_scale] = prep_im_for_blob(im, conf.image_means, target_size, conf.max_size);

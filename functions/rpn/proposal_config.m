@@ -6,18 +6,17 @@ function conf = proposal_config(model, varargin)
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
 
+% note: if new params are added, delete files in 'output/config_temp'
 ip = inputParser;
-
 %% training
-ip.addParameter('use_gpu',         gpuDeviceCount > 0, ...
-    @islogical);
+% deprecated
+ip.addParameter('use_chunk_if_train_data_large', true, @islogical);
 
+ip.addParameter('use_gpu', gpuDeviceCount > 0, @islogical);
 % whether drop the anchors that has edges outside of the image boundary
-ip.addParameter('drop_boxes_runoff_image', ...
-    true,           @islogical);
-
+ip.addParameter('drop_boxes_runoff_image', true, @islogical);
 % Image scales -- the short edge of input image
-ip.addParamValue('scales',          600,            @ismatrix);
+ip.addParameter('scales',           600,            @ismatrix);
 % Max pixel size of a scaled input image
 ip.addParamValue('max_size',        1000,           @isscalar);
 % Images per batch, only supports ims_per_batch = 1 currently
@@ -38,14 +37,13 @@ ip.addParamValue('bg_thresh_lo',    0,              @isscalar);
 % mean image, in RGB order
 ip.addParamValue('image_means',     128,            @ismatrix);
 % Use horizontally-flipped images during training?
-ip.addParameter('use_flipped',     true,           @islogical);
+ip.addParameter('use_flipped',      true,           @islogical);
 % Stride in input image pixels at ROI pooling level (network specific)
 % 16 is true for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
 ip.addParamValue('feat_stride',     16,             @isscalar);
 % train proposal target only to labled ground-truths or also include
 % other proposal results (selective search, etc.)
 ip.addParamValue('target_only_gt',  true,           @islogical);
-
 % random seed
 ip.addParamValue('rng_seed',        6,              @isscalar);
 

@@ -10,14 +10,39 @@ $RECYCLE.BIN/
 
 # User Ingore
 #models/
-bin/
-data/
+#bin/
+#data/
 datasets/
+<<<<<<< HEAD
 #external
 #external/caffe/.build_release
 external/caffe_try
+=======
+external/CaffeMex
+
+external/caffe/data/*
+external/caffe/models/*
+*.caffemodel
+*.solverstate
+*.binaryproto
+*leveldb
+*lmdb
+
+# build, distribute, and bins (+ python proto bindings)
+external/caffe/build
+external/caffe/.build_debug/*
+external/caffe/.build_release/*
+external/caffe/distribute/*
+*.testbin
+*.bin
+external/caffe/python/caffe/proto/
+external/caffe/cmake_build
+external/caffe/.cmake_build
+
+
+>>>>>>> ca521e447e4f13e3b17d2a89823d0b2079baa0e0
 output/
-cachedir/
+#cachedir/
 imdb/cache
 *.caffemodel
 *.mat

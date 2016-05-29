@@ -1,8 +1,7 @@
 function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
 % revisit by hyli
+% 
 
-%% -------------------- CONFIG --------------------
-% inputs
 ip = inputParser;
 ip.addRequired('conf',                                      @isstruct);
 ip.addRequired('imdb_train',                                @iscell);
@@ -22,11 +21,12 @@ ip.addParameter('debug',                false,              @isscalar);
 ip.parse(conf, imdb_train, roidb_train, varargin{:});
 opts = ip.Results;
 debug = opts.debug;
+train_data_name_str = mk_train_str(opts.imdb_train);
 
-imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
 %% if the trained model is saved, skip the following and return
-if ~opts.debug
-    cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
+cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
+    opts.cache_name, train_data_name_str);
+if ~debug  
     % the famous 'final.caffemodel'
     save_model_path = fullfile(cache_dir, 'final');
     if exist(save_model_path, 'file')
@@ -36,8 +36,6 @@ end
 
 %% init
 % init caffe log
-imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
-cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', opts.cache_name, imdbs_name);
 mkdir_if_missing([cache_dir '/caffe_log']);
 caffe_log_file_base = fullfile(cache_dir, 'caffe_log/train_');
 caffe.init_log(caffe_log_file_base);
@@ -60,44 +58,38 @@ disp(conf);
 disp('opts:');
 disp(opts);
 
-% making tran/val data
-mkdir('./output/training_test_data/');
-train_data_name_str = [];
-for i = 1:length(opts.imdb_train)
-    if i == length(opts.imdb_train)
-        curr_name = opts.imdb_train{i}.name;
-    else
-        curr_name = [opts.imdb_train{i}.name '_'];
-    end
-    train_data_name_str = [train_data_name_str curr_name];
-end
-
+%% making or loading tran/val data for caffe training
+mkdir_if_missing('./output/training_test_data/');
+% train
 try
     ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
-    fprintf('Loading existant training data (%s) ...', train_data_name_str);
     image_roidb_train = ld.image_roidb_train;
+    bbox_means = ld.bbox_means;
+    bbox_stds = ld.bbox_stds;
+    fprintf('Loading existant Caffe training data (%s) ...', train_data_name_str);
     clear ld;
     fprintf(' Done.\n');
 catch
-    fprintf('Preparing training data (%s) ...', train_data_name_str);
+    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
     [image_roidb_train, bbox_means, bbox_stds]...
         = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
-    save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'image_roidb_train');
-    fprintf(' Done and saved.\n');
-end
-
-if opts.do_val
     
+    save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), ...
+        'image_roidb_train', 'bbox_means', 'bbox_stds');
+    fprintf(' Done and saved.\n\n');
+end
+% test
+if opts.do_val   
     try    
         ld = load(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name));
-        fprintf('Loading existant validation data (%s) ...', opts.imdb_val.name);
+        fprintf('Loading existant Caffe validation data (%s) ...', opts.imdb_val.name);
         image_roidb_val = ld.image_roidb_val;
         shuffled_inds_val = ld.shuffled_inds_val;
         clear ld;
         fprintf(' Done.\n');
     catch
         
-        fprintf('Preparing validation data (%s) ...', opts.imdb_val.name);
+        fprintf('Preparing Caffe validation data (%s) ...\n', opts.imdb_val.name);
         [image_roidb_val]...
             = proposal_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
         % fix validation data
@@ -106,37 +98,39 @@ if opts.do_val
         
         save(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), ...
             'image_roidb_val', 'shuffled_inds_val');
-        fprintf(' Done and saved.\n');
+        fprintf(' Done and saved.\n\n');
     end
 end
 
-
-
-
+%%
 conf.classes        = opts.imdb_train{1}.classes;
 % try to train/val with images which have maximum size potentially,
 % to validate whether the gpu memory is enough
 check_gpu_memory(conf, caffe_solver, opts.do_val);
 
-%% train
+%% TRAINING
 proposal_generate_minibatch_fun = @proposal_generate_minibatch;
 visual_debug_fun                = @proposal_visual_debug;
 
-% training
 shuffled_inds = [];
 train_results = [];
 val_results = [];
 iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
+th = tic;
 
 while (iter_ < max_iter)
     caffe_solver.net.set_phase('train');
     
     % generate minibatch training data
-    [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, image_roidb_train, conf.ims_per_batch);
-    [net_inputs, ~] = proposal_generate_minibatch_fun(conf, image_roidb_train(sub_db_inds));
+    [shuffled_inds, sub_db_inds] = generate_random_minibatch(shuffled_inds, ...
+        image_roidb_train, conf.ims_per_batch);
     
-    % visual_debug_fun(conf, image_roidb_train(sub_db_inds), net_inputs, bbox_means, bbox_stds, conf.classes, scale_inds);
+    [net_inputs, ~] = proposal_generate_minibatch_fun(conf, ...
+        image_roidb_train(sub_db_inds));
+    
+    % visual_debug_fun(conf, image_roidb_train(sub_db_inds), ...
+    %           net_inputs, bbox_means, bbox_stds, conf.classes, scale_inds);
     caffe_solver.net.reshape_as_input(net_inputs);
     
     % one iter SGD update
@@ -168,7 +162,10 @@ while (iter_ < max_iter)
     end
     
     if ~mod(iter_, 100)
-        fprintf('iter %d, loss %.4f\n', iter_, (10*rst(2).data + rst(3).data));
+        time = toc(th);
+        fprintf('iter %d, loss %.4f, time: %.2f min, estTime: %.2f hour\n', ...
+            iter_, (10*rst(2).data + rst(3).data), time/60, (time/3600)*(max_iter-iter_)/100);
+        th = tic;
     end
     iter_ = caffe_solver.iter();
 end
@@ -185,6 +182,24 @@ diary off;
 caffe.reset_all();
 rng(prev_rng);
 
+end
+
+function str = mk_train_str(imdb)
+    str = [];
+    
+    if length(imdb) >= 3
+        % it's the imagenet training data
+        str = 'ilsvrc14_train';
+    else
+        for i = 1:length(imdb)
+            if i == length(imdb)
+                curr_name = imdb.name;
+            else
+                curr_name = [imdb{i}.name '_'];
+            end
+            str = [str curr_name];
+        end
+    end
 end
 
 function val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)

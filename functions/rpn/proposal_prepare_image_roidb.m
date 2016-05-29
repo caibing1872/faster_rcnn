@@ -1,5 +1,6 @@
 function [image_roidb, bbox_means, bbox_stds] = ...
     proposal_prepare_image_roidb(conf, imdbs, roidbs, bbox_means, bbox_stds)
+%
 % [image_roidb, bbox_means, bbox_stds] = proposal_prepare_image_roidb(conf, imdbs, roidbs, cache_img, bbox_means, bbox_stds)
 % --------------------------------------------------------
 % Faster R-CNN
@@ -20,7 +21,10 @@ end
 imdbs = imdbs(:);
 roidbs = roidbs(:);
 
+%% step 1
+fprintf(' || begin to merge im_roidb from many dbs (taking quite a while on fucking ilsvrc)...\n');
 if conf.target_only_gt
+    
     image_roidb = ...
         cellfun(@(x, y) ... // @(imdbs, roidbs)
         arrayfun(@(z) ... //@([1:length(x.image_ids)])
@@ -37,32 +41,44 @@ else
         [1:length(x.image_ids)]', 'UniformOutput', true),...
         imdbs, roidbs, 'UniformOutput', false);
 end
-
 image_roidb = cat(1, image_roidb{:});
+num_images = length(image_roidb);
+fprintf(' || done! (%d images!)\n', num_images);
 
-% enhance roidb to contain bounding-box regression targets
-[image_roidb, bbox_means, bbox_stds] = ...
-    append_bbox_regression_targets(conf, image_roidb, bbox_means, bbox_stds);
+%% step 2: enhance roidb to contain bounding-box regression targets
+% taking too much memory on imagenet training data
+fprintf(' || begin to append bbox regression targets...\n');
+stats = [];
+% original code
+[image_roidb, bbox_means, bbox_stds, ~] = ...
+    append_bbox_regression_targets(stats, conf, image_roidb, bbox_means, bbox_stds);
+
+fprintf(' || done!\n');
 end
 
-function [image_roidb, means, stds] = append_bbox_regression_targets(conf, image_roidb, means, stds)
+function [image_roidb, means, stds, stats] = append_bbox_regression_targets(...
+    stats, conf, image_roidb, means, stds)
+% 'stats' jots down info alongside
 % means and stds -- (k+1) * 4, include background class
 
 num_images = length(image_roidb);
 % Infer number of classes from the number of columns in gt_overlaps
 image_roidb_cell = num2cell(image_roidb, 2);
 bbox_targets = cell(num_images, 1);
+
 parfor i = 1:num_images
-%for i = 1:num_images
-    % for fcn, anchors are concated as [channel, height, width], where channel is the fastest dimension.
-    [anchors, im_scales] = proposal_locate_anchors(conf, image_roidb_cell{i}.im_size);
+    
+    % for fcn, anchors are concated as [channel, height, width],
+    %   where channel is the fastest dimension.
+    % note by hyli: change input args to debug
+    
+    %     [anchors, im_scales] = proposal_locate_anchors(conf, ...
+    %         image_roidb_cell{i}.im_size);
+    [anchors, im_scales] = proposal_locate_anchors(conf, image_roidb_cell{i});
     
     gt_rois = image_roidb_cell{i}.boxes;
     gt_labels = image_roidb_cell{i}.class;
     im_size = image_roidb_cell{i}.im_size;
-    %        if isempty(gt_rois)
-    %            pause;
-    %        end
     bbox_targets{i} = cellfun(@(x, y) ...
         compute_targets(conf, scale_rois(gt_rois, im_size, y), gt_labels,  x, image_roidb_cell{i}, y), ...
         anchors, im_scales, 'UniformOutput', false);
@@ -90,9 +106,13 @@ if ~(exist('means', 'var') && ~isempty(means) && exist('stds', 'var') && ~isempt
             end
         end
     end
-    
     means = bsxfun(@rdivide, sums, class_counts);
     stds = (bsxfun(@minus, bsxfun(@rdivide, squared_sums, class_counts), means.^2)).^0.5;
+    
+    % update stats
+    stats.class_counts = class_counts;
+    stats.squared_sums = squared_sums;
+    stats.sums = sums;
 end
 
 % Normalize targets
@@ -108,7 +128,9 @@ for i = 1:num_images
         end
     end
 end
+
 end
+
 
 function scaled_rois = scale_rois(rois, im_size, im_scale)
 
@@ -126,7 +148,7 @@ end
 function bbox_targets = compute_targets(conf, gt_rois, gt_labels, ex_rois, image_roidb, im_scale)
 % output: bbox_targets
 %   positive: [class_label, regression_label]
-%   ingore: [0, zero(regression_label)]
+%   ignore: [0, zero(regression_label)]
 %   negative: [-1, zero(regression_label)]
 
 if isempty(gt_rois)
@@ -205,8 +227,8 @@ if 0 % debug
     hold off;
     %%%%%%%%%%%%%%
 end
-
 bbox_targets = sparse(bbox_targets);
+
 end
 
 function contained = is_contain_in_image(boxes, im_size)

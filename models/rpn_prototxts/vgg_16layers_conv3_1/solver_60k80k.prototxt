@@ -9,7 +9,8 @@ display: 20
 max_iter: 80000
 momentum: 0.9
 weight_decay: 0.0005
-# We disable standard caffe solver snapshotting and implement our own snapshot
+# We disable standard caffe solver snapshotting 
+# and implement our own snapshot
 snapshot: 0
 #debug_info: true
 
