@@ -172,7 +172,6 @@ classdef Net < handle
     end
     function reshape_as_input(self, input_data)
       CHECK(iscell(input_data), 'input_data must be a cell array');
-      % size(self.inputs)
       CHECK(length(input_data) == length(self.inputs), ...
         'input data cell length must match input blob number');
       % reshape input blobs

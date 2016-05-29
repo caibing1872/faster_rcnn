@@ -20,6 +20,7 @@ function [output_width_map, output_height_map] = proposal_calc_output_size(conf,
     output_w = nan(size(input));
     output_h = nan(size(input));
     for i = 1:length(input)
+        tic_toc_print('%d/%d\n', i, length(input));
         s = input(i);
         im_blob = single(zeros(s, s, 3, 1));
         net_inputs = {im_blob};

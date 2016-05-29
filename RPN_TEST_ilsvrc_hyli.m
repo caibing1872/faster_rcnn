@@ -5,10 +5,15 @@
 %       just some stupid task assigned by damn Wanli Ouyang
 % ---------------------------------------------------------
 
+function RPN_TEST_ilsvrc_hyli(cache_base_proposal, test_folder, iter_name)
+
+cache_base_proposal = 'NEW_ILSVRC_vgg16';
+test_folder = 'ilsvrc14_val2';
+iter_name = 'iter_2500';
 
 %% init
 opts.caffe_version = 'caffe_faster_rcnn';
-opts.gpu_id = 0;
+opts.gpu_id = 1;
 
 caffe_dir = './external/caffe/matlab';
 addpath(genpath(caffe_dir));
@@ -18,31 +23,16 @@ caffe.set_mode_gpu();
 
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN;
+test_file = [test_folder '/'];
+suffix = ['_' iter_name];
 
-% cache_base_proposal = 'ilsvrc_vgg16_val1';
-% test_file = 'ilsvrc14_val1/final';
-% suffix = '_final';
-%
-cache_base_proposal = 'ilsvrc_vgg16_train14';
-test_file = 'ilsvrc14_train14/iter_90000';
-suffix = '_iter_90000';
-
-cache_base_fast_rcnn = '';
-model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, ...
-    cache_base_fast_rcnn, model);
-
+model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
 % config
 [ conf_proposal, ~ ] =  Faster_RCNN_Train.set_config( cache_base_proposal, model );
-
-% train/test data
-% init:
-%   imdb_train, roidb_train, cell;
-%   imdb_test, roidb_test, struct
+% test data
 dataset = [];
-% change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
 dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
-
 
 %%  stage one test and compute recall
 % test

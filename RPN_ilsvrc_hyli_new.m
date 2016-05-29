@@ -20,25 +20,24 @@ opts.caffe_version = 'caffe_faster_rcnn';
 opts.do_val = true;
 
 % cache base
-%cache_base_proposal = 'ilsvrc_vgg16_trainALL';
-%cache_base_proposal = 'ilsvrc_vgg16_try';
-%cache_base_proposal = 'ilsvrc_vgg16_train14';
-cache_base_proposal = 'ilsvrc_vgg16_try';
+%cache_base_proposal = 'NEW_ilsvrc_vgg16';
+cache_base_proposal = 'NEW_ILSVRC_vgg16';
 
 opts.gpu_id = 0;
 opts.train_key = 'train14';                     % train14 only, plus val1
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
+%model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
+model = Model.VGG16_for_Faster_RCNN('solver_60k80k');
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
-
-% config
-[conf_proposal, ~] = Faster_RCNN_Train.set_config( cache_base_proposal, model );
 
 caffe_dir = './external/caffe/matlab';
 addpath(genpath(caffe_dir));
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
+
+% config, must be input after setting caffe
+[conf_proposal, ~] = Faster_RCNN_Train.set_config( cache_base_proposal, model );
 
 % train/test data
 % init:
@@ -56,15 +55,15 @@ fprintf('\nStage one proposal...\n');
 % train
 model.stage1_rpn.output_model_file = proposal_train(...
     conf_proposal, ...
-    dataset.imdb_train, dataset.roidb_train, ...
-    'train_key',            opts.train_key, ...
+    dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
     'do_val',               opts.do_val, ...
     'imdb_val',             dataset.imdb_test, ...
     'roidb_val',            dataset.roidb_test, ...
     'solver_def_file',      model.stage1_rpn.solver_def_file, ...
     'net_file',             model.stage1_rpn.init_net_file, ...
     'cache_name',           model.stage1_rpn.cache_name, ...
-    'snapshot_interval',    2 ...
+    'snapshot_interval',    2500, ...
+    'solverstate',          '' ...
     );
 
 % final test

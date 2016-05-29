@@ -1,4 +1,4 @@
-function save_model_path = proposal_train(conf, imdb_train, roidb_train, varargin)
+function save_model_path = proposal_train(conf, imdb_train, roidb_train, train_key, varargin)
 % revisit by hyli
 % all brand new
 
@@ -19,7 +19,7 @@ ip.addParameter('net_file',             '',                 @isstr);
 ip.addParameter('cache_name',           'Zeiler_conv5',     @isstr);
 ip.addParameter('debug',                false,              @isscalar);
 ip.addParameter('solverstate',          '',                 @isstr);
-ip.parse(conf, imdb_train, roidb_train, varargin{:});
+ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
 debug = opts.debug;
@@ -70,6 +70,7 @@ else
     % loading solverstate
     caffe_solver.restore(fullfile(cache_dir, ...
         sprintf('%s.solverstate', opts.solverstate)));
+    fprintf('\nRestoring from iter %d...\n', caffe_solver.iter()-1);
 end
 
 %% making or loading tran/val data for caffe training
@@ -169,7 +170,7 @@ while (iter_ < max_iter)
     % snapshot
     if ~mod(iter_, opts.snapshot_interval)
         snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
-        save([cache_dir '/' 'loss.mat'], 'train_res_total', 'val_results');
+        save([cache_dir '/' sprintf('loss_%d.mat', iter_)], 'train_res_total', 'val_results');
     end
     % training progress report
     if ~mod(iter_, 100)
@@ -178,6 +179,7 @@ while (iter_ < max_iter)
             iter_, (10*rst(2).data + rst(3).data), time/60, (time/3600)*(max_iter-iter_)/100);
         th = tic;
     end
+    % update iter index
     iter_ = caffe_solver.iter();
 end
 

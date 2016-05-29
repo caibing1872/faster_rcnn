@@ -19,6 +19,7 @@ run('./startup');
 fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.caffe_version = 'caffe_faster_rcnn';
 opts.gpu_id = 0;
+<<<<<<< HEAD
 % whether or not do testing(val) during training
 opts.do_val = true;                 
 % if training data is READY (valid when key is 'train', or 'train14')
@@ -26,6 +27,12 @@ opts.skip_data_prep = true;
 %opts.train_key = 'train'; 
 opts.train_key = 'train_val1';  % only val1
 %opts.train_key = 'train14';      % train14 only, plus val1
+=======
+opts.do_val = true;                 % whether or not do testing(val) during training
+opts.skip_data_prep = false;        % if training data is READY (valid when key is 'train')
+%opts.train_key = 'train_val1';      % 'train', 'train_val1'
+opts.train_key = 'train'; 
+>>>>>>> 40793cf719ead2877567d373ab7dad59865ddfd6
 
 caffe_dir = './external/caffe/matlab';
 addpath(genpath(caffe_dir));
@@ -36,10 +43,14 @@ caffe.set_mode_gpu();
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN;
 % cache base
+<<<<<<< HEAD
 %cache_base_proposal = 'ilsvrc_vgg16_trainALL';
 %cache_base_proposal = 'ilsvrc_vgg16_try';
 %cache_base_proposal = 'ilsvrc_vgg16_train14';
 cache_base_proposal = 'ilsvrc_vgg16_val1';
+=======
+cache_base_proposal = 'ilsvrc_vgg16_try';
+>>>>>>> 40793cf719ead2877567d373ab7dad59865ddfd6
 cache_base_fast_rcnn = '';
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, ...
     cache_base_fast_rcnn, model);

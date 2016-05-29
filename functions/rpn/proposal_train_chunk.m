@@ -62,6 +62,7 @@ disp(opts);
 mkdir_if_missing('./output/training_test_data');
 % train
 chunk_mode = true;
+<<<<<<< HEAD
 if length(opts.imdb_train) >= 3 && strcmp(opts.imdb_train{2}.name, 'ilsvrc14_train_pos_1')
     % chunk mode, only the 'train' case
     if ~exist(sprintf('./output/training_test_data/%s_c1.mat', train_data_name_str), 'file')
@@ -78,6 +79,11 @@ if length(opts.imdb_train) >= 3 && strcmp(opts.imdb_train{2}.name, 'ilsvrc14_tra
     
 else
     % val1 or train14 case, not do use chunk mode
+=======
+%if length(opts.imdb_train) == 1
+if ~strcmp(train_data_name_str, 'ilsvrc14_train')
+    % only val1, not do use chunk mode
+>>>>>>> 40793cf719ead2877567d373ab7dad59865ddfd6
     chunk_mode = false;
     if ~exist(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'file')
         
