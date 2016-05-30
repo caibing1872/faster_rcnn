@@ -10,14 +10,10 @@ $RECYCLE.BIN/
 
 # User Ingore
 #models/
-#bin/
+bin/
 #data/
 datasets/
-<<<<<<< HEAD
-#external
-#external/caffe/.build_release
 external/caffe_try
-=======
 external/CaffeMex
 
 external/caffe/data/*
@@ -39,14 +35,12 @@ external/caffe/python/caffe/proto/
 external/caffe/cmake_build
 external/caffe/.cmake_build
 
-
->>>>>>> ca521e447e4f13e3b17d2a89823d0b2079baa0e0
 output/
-#cachedir/
 imdb/cache
 *.caffemodel
 *.mat
 *.m~
+*.prototxt~
 local/
 
 # Windows Installer files

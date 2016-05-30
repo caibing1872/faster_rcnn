@@ -90,7 +90,7 @@ catch
         = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
     
     save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), ...
-        'image_roidb_train', 'bbox_means', 'bbox_stds');
+        'image_roidb_train', 'bbox_means', 'bbox_stds', '-v7.3');
     fprintf(' Done and saved.\n\n');
 end
 % test
@@ -112,7 +112,7 @@ if opts.do_val
         shuffled_inds_val   = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
         
         save(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), ...
-            'image_roidb_val', 'shuffled_inds_val');
+            'image_roidb_val', 'shuffled_inds_val', '-v7.3');
         fprintf(' Done and saved.\n\n');
     end
 end

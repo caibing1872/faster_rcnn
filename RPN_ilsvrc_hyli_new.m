@@ -21,13 +21,14 @@ opts.do_val = true;
 
 % cache base
 %cache_base_proposal = 'NEW_ilsvrc_vgg16';
-cache_base_proposal = 'NEW_ILSVRC_vgg16';
+cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
 
 opts.gpu_id = 0;
 opts.train_key = 'train14';                     % train14 only, plus val1
 % load paramters from the 'models' folder
 %model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
-model = Model.VGG16_for_Faster_RCNN('solver_60k80k');
+%model = Model.VGG16_for_Faster_RCNN('solver_60k80k');
+model = Model.VGG16_for_Faster_RCNN('solver_8w13w');
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
 
 caffe_dir = './external/caffe/matlab';
@@ -46,7 +47,7 @@ caffe.set_mode_gpu();
 dataset = [];
 % change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
-use_flipped = false;
+use_flipped = true;     % ls139 has flip version
 dataset = Dataset.ilsvrc14(dataset, opts.train_key, use_flipped, root_path);
 dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
 
@@ -69,6 +70,3 @@ model.stage1_rpn.output_model_file = proposal_train(...
 % final test
 dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
     model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);
-
-
-
