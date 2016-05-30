@@ -2,8 +2,13 @@ function roidb_new = do_proposal_test(conf, model_stage, imdb, roidb)
 roidb_new = [];
 % revised by hyli
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model_stage.cache_name, imdb.name);
+if isfield(model_stage, 'output_model_file')
+    suffix = '_final';
+else
+    suffix = '';
+end
 try
-    ld = load(fullfile(cache_dir, ['aboxes_filtered_' imdb.name '.mat']));
+    ld = load(fullfile(cache_dir, ['aboxes_filtered_' imdb.name suffix '.mat']));
     aboxes = ld.aboxes;
     clear ld;
 catch
@@ -14,13 +19,15 @@ catch
     aboxes = proposal_test(conf, imdb, ...
         'net_def_file',     model_stage.test_net_def_file, ...
         'net_file',         model_stage.output_model_file, ...
-        'cache_name',       model_stage.cache_name);
+        'cache_name',       model_stage.cache_name, ...
+        'suffix',           suffix ...
+    );
     
     % NMS, the following is extremely time-consuming
     aboxes = boxes_filter_inline(aboxes, model_stage.nms.per_nms_topN, ...
         model_stage.nms.nms_overlap_thres, model_stage.nms.after_nms_topN, conf.use_gpu);
     % aboxes: 4952 x 1 cell, each entry: 
-    save(fullfile(cache_dir, ['aboxes_filtered_' imdb.name '.mat']), 'aboxes', '-v7.3');
+    save(fullfile(cache_dir, ['aboxes_filtered_' imdb.name suffix '.mat']), 'aboxes', '-v7.3');
 end
 
 if 0
