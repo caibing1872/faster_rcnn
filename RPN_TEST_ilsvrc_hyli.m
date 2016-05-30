@@ -8,9 +8,10 @@
 function RPN_TEST_ilsvrc_hyli(cache_base_proposal, test_folder, iter_name)
 
 cache_base_proposal = 'NEW_ILSVRC_vgg16';
-test_folder = 'ilsvrc14_val2';
+%test_folder = 'ilsvrc14_val2';
+test_folder = 'train14';        % where the intermediate result resides
 iter_name = 'iter_2500';
-
+%iter_name = 'final';
 %% init
 opts.caffe_version = 'caffe_faster_rcnn';
 opts.gpu_id = 1;
@@ -41,7 +42,8 @@ dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
 
 % revised by hyli
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model.stage1_rpn.cache_name, dataset.imdb_test.name);
-output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', model.stage1_rpn.cache_name, test_file);
+output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
+    model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
 try
     ld = load(fullfile(cache_dir, ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']));
     aboxes = ld.aboxes;
@@ -67,4 +69,6 @@ end
 
 recall_per_cls = compute_recall_ilsvrc(...
     fullfile(cache_dir, ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']), 300);
-save(fullfile(cache_dir, ['recall_' dataset.imdb_test.name suffix '.mat']), 'recall_per_cls');
+mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+save(fullfile(cache_dir, ['recall_' dataset.imdb_test.name suffix ...
+    sprintf('_%.2f.mat', 100*mean_recall)]), 'recall_per_cls');

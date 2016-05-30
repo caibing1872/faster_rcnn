@@ -6,9 +6,12 @@ function aboxes = proposal_test(conf, imdb, varargin)
 ip = inputParser;
 ip.addRequired('conf',                              @isstruct);
 ip.addRequired('imdb',                              @isstruct);
-ip.addParameter('net_def_file',    fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'test.prototxt'), @isstr);
-ip.addParameter('net_file',        fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'Zeiler_conv5.caffemodel'), @isstr);
-ip.addParameter('cache_name',      'Zeiler_conv5',  @isstr);
+% ip.addParameter('net_def_file',    fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'test.prototxt'), @isstr);
+% ip.addParameter('net_file',        fullfile(pwd, 'proposal_models', 'Zeiler_conv5', 'Zeiler_conv5.caffemodel'), @isstr);
+% ip.addParameter('cache_name',      'Zeiler_conv5',  @isstr);
+ip.addParameter('net_def_file',                     @isstr);
+ip.addParameter('net_file',                         @isstr);
+ip.addParameter('cache_name',                       @isstr);
 ip.addParameter('suffix',          '',              @isstr);
 
 ip.parse(conf, imdb, varargin{:});
@@ -58,7 +61,8 @@ catch
     count = 0;
     for i = 1:num_images
         count = count + 1;
-        tic_toc_print('%s: test (%s) %d/%d \n', procid(), imdb.name, count, num_images);
+        tic_toc_print('%s: test %s (%s) %d/%d \n', procid(), ...
+            opts.suffix, imdb.name, count, num_images);
         th = tic;
         im = imread(imdb.image_at(i));
         
