@@ -46,7 +46,9 @@ ip.addParamValue('feat_stride',     16,             @isscalar);
 ip.addParamValue('target_only_gt',  true,           @islogical);
 % random seed
 ip.addParamValue('rng_seed',        6,              @isscalar);
-
+% scale of anchor size
+%ip.addParameter('anchor_scale',      2.^[3:5],       @ismatrix);
+ip.addParameter('anchor_scale',      2.^[5:9],       @ismatrix);    % 32-256
 
 %% testing
 ip.addParamValue('test_scales',     600,            @isscalar);
@@ -73,6 +75,13 @@ end
 %% added by hyli
 % move the following from main function
 % generate anchors and pre-calculate output size of rpn network
-[conf.anchors, conf.output_width_map, conf.output_height_map] ...
-    = proposal_prepare_anchors(conf, model.stage1_rpn.cache_name, model.stage1_rpn.test_net_def_file);
+% [conf.anchors, conf.output_width_map, conf.output_height_map] ...
+%     = proposal_prepare_anchors(conf, model.stage1_rpn.cache_name, ...
+%     model.stage1_rpn.test_net_def_file);
+
+[conf.output_width_map, conf.output_height_map] = ...
+    proposal_calc_output_size(conf, model.stage1_rpn.test_net_def_file);
+
+conf.anchors = proposal_generate_anchors(model.stage1_rpn.cache_name, ...
+    'scales',  conf.anchor_scale);
 end

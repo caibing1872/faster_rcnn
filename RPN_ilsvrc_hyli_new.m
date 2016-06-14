@@ -21,16 +21,16 @@ opts.do_val = true;
 
 % =====================================================
 % cache base
-cache_base_proposal = 'NEW_ilsvrc_vgg16_conti';
+cache_base_proposal = 'NEW_ilsvrc_vgg16_anchor_size';
 %cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
 opts.gpu_id = 0;
-opts.train_key = 'train14';                     % train14 only, plus val1
+% train14 only, plus val1
+opts.train_key = 'train14';                     
 % load paramters from the 'models' folder
 %model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
-model = Model.VGG16_for_Faster_RCNN('solver_60k80k_conti');
+model = Model.VGG16_for_Faster_RCNN('solver_8w13w');
 % uncomment the following if init from another model
-ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
-%model = Model.VGG16_for_Faster_RCNN('solver_8w13w');
+%ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 use_flipped = false;     % ls139 has flip version
 % =====================================================
 
@@ -76,6 +76,9 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'solverstate',          '' ...
     );
 
-% final test
-dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
-    model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);
+% % final test
+% dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
+%     model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);
+
+% compute recall
+RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final')

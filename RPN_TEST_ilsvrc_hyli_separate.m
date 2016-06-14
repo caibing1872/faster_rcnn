@@ -5,9 +5,14 @@
 %       just some stupid task assigned by damn Wanli Ouyang
 % ---------------------------------------------------------
 
-function RPN_TEST_ilsvrc_hyli(cache_base_proposal, test_folder, iter_name)
+function RPN_TEST_ilsvrc_hyli_separate(cache_base_proposal, test_folder, iter_name)
 
-
+% cache_base_proposal = 'NEW_ILSVRC_vgg16';
+cache_base_proposal = 'NEW_ilsvrc_vgg16_anchor_size';
+%test_folder = 'ilsvrc14_val2';
+test_folder = 'train14';        % where the intermediate result resides
+iter_name = 'iter_20000';
+%iter_name = 'final';
 %% init
 opts.caffe_version = 'caffe_faster_rcnn';
 opts.gpu_id = 1;

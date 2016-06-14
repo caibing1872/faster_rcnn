@@ -6,6 +6,30 @@ input_dim: 3
 input_dim: 224
 input_dim: 224
 
+input: "labels"
+input_dim: 1 		# to be changed on-the-fly to match input dim
+input_dim: 15        # 9(anchors)        
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+
+input: "labels_weights"
+input_dim: 1 		# to be changed on-the-fly to match input dim
+input_dim: 15        # 9(anchors)        
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+
+input: "bbox_targets"
+input_dim: 1  		# to be changed on-the-fly to match input dim
+input_dim: 60  		# 4 * 15(anchors) 
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+
+input: "bbox_loss_weights"
+input_dim: 1  		# to be changed on-the-fly to match input dim
+input_dim: 60  		# 4 * 15(anchors) 
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+input_dim: 14  		# size for 224 input image, to be changed on-the-fly to match input dim
+
 layer {
 	bottom: "data"
 	top: "conv1_1"
@@ -487,8 +511,59 @@ layer {
 }
 
 layer {
-   name: "proposal_cls_prob"
-   type: "Softmax"
+   bottom: "labels"
+   top: "labels_reshape"
+   name: "labels_reshape"
+   type: "Reshape"
+   reshape_param{
+	   shape {
+			dim: 0 
+			dim: 1
+			dim: -1 
+			dim: 0
+		}
+	}
+}
+
+layer {
+   bottom: "labels_weights"
+   top: "labels_weights_reshape"
+   name: "labels_weights_reshape"
+   type: "Reshape"
+   reshape_param{
+	   shape {
+			dim: 0 
+			dim: 1
+			dim: -1 
+			dim: 0
+		}
+	}
+}
+
+layer {
+   name: "loss"
+   type: "SoftmaxWithLoss"
    bottom: "proposal_cls_score_reshape"
-   top: "proposal_cls_prob"
+   bottom: "labels_reshape"
+   bottom: "labels_weights_reshape"
+   top: "loss_cls"
+   loss_weight: 1
+}
+
+layer {
+   name: "accuarcy"
+   type: "Accuracy"
+   bottom: "proposal_cls_score_reshape"
+   bottom: "labels_reshape"
+   top: "accuarcy"
+}
+
+layer {
+  name: "loss_bbox"
+  type: "SmoothL1Loss"
+  bottom: "proposal_bbox_pred"
+  bottom: "bbox_targets"
+  bottom: "bbox_loss_weights"
+  top: "loss_bbox"
+  loss_weight: 10
 }
