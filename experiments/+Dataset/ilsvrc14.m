@@ -7,6 +7,7 @@ function dataset = ilsvrc14(dataset, usage, use_flip, root_path)
 switch usage
     
     case {'train'}
+        % DEPRECATED
         % we use all the training pos and val1 (defined by the genius Ross)
         dataset.imdb_train{1,1} = imdb_from_ilsvrc14(root_path, 'val1', use_flip);
         

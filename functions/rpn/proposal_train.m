@@ -7,7 +7,9 @@ ip.addRequired('conf',                                      @isstruct);
 ip.addRequired('imdb_train',                                @iscell);
 ip.addRequired('roidb_train',                               @iscell);
 ip.addRequired('train_key',                                 @isstr);
-ip.addParameter('do_val',               false,              @isscalar);
+
+ip.addParameter('detect_exist_train_file', true,            @islogical);
+ip.addParameter('do_val',               false,              @islogical);
 ip.addParameter('imdb_val',             struct(),           @isstruct);
 ip.addParameter('roidb_val',            struct(),           @isstruct);
 ip.addParameter('val_iters',            500,                @isscalar);
@@ -23,7 +25,6 @@ ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
 debug = opts.debug;
-% train_data_name_str = mk_train_str(opts.imdb_train);
 train_data_name_str = opts.train_key;
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
     opts.cache_name, train_data_name_str);
@@ -60,6 +61,7 @@ disp(opts);
 % init caffe solver
 caffe_solver = caffe.Solver(opts.solver_def_file);
 
+% resume mechanism
 if isempty(opts.solverstate)
     caffe_solver.net.copy_from(opts.net_file);
     % conf.classes        = opts.imdb_train{1}.classes;
@@ -67,7 +69,7 @@ if isempty(opts.solverstate)
     % to validate whether the gpu memory is enough
     check_gpu_memory(conf, caffe_solver, opts.do_val);
 else
-    % loading solverstate
+    % loading solverstate, resume
     caffe_solver.restore(fullfile(cache_dir, ...
         sprintf('%s.solverstate', opts.solverstate)));
     fprintf('\nRestoring from iter %d...\n', caffe_solver.iter()-1);
@@ -75,8 +77,10 @@ end
 
 %% making or loading tran/val data for caffe training
 mkdir_if_missing('./output/training_test_data/');
-% train
-try
+% training
+if exist(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'file') ...
+        && opts.detect_exist_train_file
+    
     ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
     image_roidb_train = ld.image_roidb_train;
     bbox_means = ld.bbox_means;
@@ -84,7 +88,7 @@ try
     fprintf('Loading existant Caffe training data (%s) ...', train_data_name_str);
     clear ld;
     fprintf(' Done.\n');
-catch
+else
     fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
     [image_roidb_train, bbox_means, bbox_stds]...
         = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
@@ -93,16 +97,17 @@ catch
         'image_roidb_train', 'bbox_means', 'bbox_stds', '-v7.3');
     fprintf(' Done and saved.\n\n');
 end
-% test
+% validation
 if opts.do_val   
-    try    
+    if exist(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), 'file') ...
+            && opts.detect_exist_train_file
         ld = load(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name));
         fprintf('Loading existant Caffe validation data (%s) ...', opts.imdb_val.name);
         image_roidb_val = ld.image_roidb_val;
         shuffled_inds_val = ld.shuffled_inds_val;
         clear ld;
         fprintf(' Done.\n');
-    catch
+    else
         
         fprintf('Preparing Caffe validation data (%s) ...\n', opts.imdb_val.name);
         [image_roidb_val]...
@@ -195,24 +200,6 @@ diary off;
 caffe.reset_all();
 rng(prev_rng);
 
-end
-
-function str = mk_train_str(imdb)
-    str = [];
-    
-    if length(imdb) >= 3
-        % it's the imagenet training data
-        str = 'ilsvrc14_train';
-    else
-        for i = 1:length(imdb)
-            if i == length(imdb)
-                curr_name = imdb.name;
-            else
-                curr_name = [imdb{i}.name '_'];
-            end
-            str = [str curr_name];
-        end
-    end
 end
 
 function val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)
@@ -392,4 +379,22 @@ confidence_loss = sum(confidence_loss' .* label_weights(:)) / sum(label_weights(
 results = parse_rst([], rst);
 fprintf('C++   : conf %f, reg %f\n', results.loss_cls.data, results.loss_bbox.data);
 fprintf('Matlab: conf %f, reg %f\n', confidence_loss, regression_loss);
+end
+
+function str = mk_train_str(imdb)
+    str = [];
+    
+    if length(imdb) >= 3
+        % it's the imagenet training data
+        str = 'ilsvrc14_train';
+    else
+        for i = 1:length(imdb)
+            if i == length(imdb)
+                curr_name = imdb.name;
+            else
+                curr_name = [imdb{i}.name '_'];
+            end
+            str = [str curr_name];
+        end
+    end
 end

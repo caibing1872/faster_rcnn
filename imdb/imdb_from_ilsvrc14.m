@@ -4,8 +4,8 @@ function imdb = imdb_from_ilsvrc14(root_dir, image_set, flip)
 %  train14
 %
 % imdb.name = 'ilsvrc14_val1'
-% imdb.image_dir = '/work4/rbg/ILSVRC/ILSVRC2013_DET_train/n02672831/'
 % imdb.extension = 'JPEG'
+% imdb.image_dir = '../ILSVRC2014_DET_train/'
 % imdb.details   [structure]
 %       image_list_file
 %       blacklist_file
@@ -14,7 +14,7 @@ function imdb = imdb_from_ilsvrc14(root_dir, image_set, flip)
 %       root_dir
 %       devkit_path
 % imdb.flip  [logic]
-% imdb.image_ids = {'n02672831_11478', ... }
+% imdb.image_ids = {'ILSVRC2012_val_00010706', ... }
 % imdb.sizes = [numimages x 2]
 % imdb.is_blacklisted
 % imdb.classes = {'accordian', ... }
@@ -62,21 +62,27 @@ catch
         fid = fopen(imdb.details.image_list_file, 'r');
         temp = textscan(fid, '%s %d');
         imdb.image_ids = temp{1};   % cell type
-        
-        imdb.extension = 'JPEG';
         imdb.flip = flip;
         
+        % blacklist case
         if strcmp(image_set, 'val') || ...
                 strcmp(image_set, 'val1') || strcmp(image_set, 'val2')
             
             imdb.details.blacklist_file = ...
                 fullfile(devkit_path, 'data', ...
-                'ILSVRC2014_det_validation_blacklist.txt');
-            
+                'ILSVRC2014_det_validation_blacklist.txt');      
             [bl_image_ids, ~] = textread(imdb.details.blacklist_file, '%d %s');
             is_blacklisted = containers.Map(bl_image_ids, ones(length(bl_image_ids), 1));
+            
         else
             imdb.details.blacklist_file = [];
+        end
+        
+        if strcmp(image_set, 'val') || strcmp(image_set, 'val1') ...
+                || strcmp(image_set, 'val2')
+            imdb.details.bbox_path = bbox_path.val;
+        elseif strcmp(image_set, 'train14')
+            imdb.details.bbox_path = bbox_path.train;
         end
         
         if flip
@@ -104,12 +110,6 @@ catch
         imdb.image_at = @(i) ...
             fullfile(imdb.image_dir, [imdb.image_ids{i} '.' imdb.extension]);
         
-        if strcmp(image_set, 'val') || strcmp(image_set, 'val1') ...
-                || strcmp(image_set, 'val2')
-            imdb.details.bbox_path = bbox_path.val;
-        elseif strcmp(image_set, 'train14')
-            imdb.details.bbox_path = bbox_path.train;
-        end
     else
         error('unknown image set');
     end
@@ -122,6 +122,7 @@ catch
     imdb.eval_func = @imdb_eval_ilsvrc14;
     imdb.roidb_func = @roidb_from_ilsvrc14;
     
+    % read each image to get the 'imdb.sizes'
     % Some images are blacklisted due to noisy annotations
     imdb.is_blacklisted = false(length(imdb.image_ids), 1);    
     for i = 1:length(imdb.image_ids)

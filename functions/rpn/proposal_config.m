@@ -12,56 +12,60 @@ ip = inputParser;
 % deprecated
 ip.addParameter('use_chunk_if_train_data_large', true, @islogical);
 
-ip.addParameter('use_gpu', gpuDeviceCount > 0, @islogical);
+ip.addParameter('use_gpu',          gpuDeviceCount > 0, @islogical);
 % whether drop the anchors that has edges outside of the image boundary
 ip.addParameter('drop_boxes_runoff_image', true, @islogical);
 % Image scales -- the short edge of input image
 ip.addParameter('scales',           600,            @ismatrix);
 % Max pixel size of a scaled input image
-ip.addParamValue('max_size',        1000,           @isscalar);
+ip.addParameter('max_size',         1000,           @isscalar);
 % Images per batch, only supports ims_per_batch = 1 currently
-ip.addParamValue('ims_per_batch',   1,              @isscalar);
+ip.addParameter('ims_per_batch',    1,              @isscalar);
 % Minibatch size
-ip.addParamValue('batch_size',      256,            @isscalar);
+ip.addParameter('batch_size',       256,            @isscalar);
 % Fraction of minibatch that is foreground labeled (class > 0)
-ip.addParamValue('fg_fraction',     0.5,           @isscalar);
+ip.addParameter('fg_fraction',      0.5,            @isscalar);
 % weight of background samples, when weight of foreground samples is
 % 1.0
-ip.addParamValue('bg_weight',       1.0,            @isscalar);
+ip.addParameter('bg_weight',        1.0,            @isscalar);
 % Overlap threshold for a ROI to be considered foreground (if >= fg_thresh)
-ip.addParamValue('fg_thresh',       0.7,            @isscalar);
+ip.addParameter('fg_thresh',        0.7,            @isscalar);
 % Overlap threshold for a ROI to be considered background (class = 0 if
 % overlap in [bg_thresh_lo, bg_thresh_hi))
-ip.addParamValue('bg_thresh_hi',    0.3,            @isscalar);
-ip.addParamValue('bg_thresh_lo',    0,              @isscalar);
+ip.addParameter('bg_thresh_hi',     0.3,            @isscalar);
+ip.addParameter('bg_thresh_lo',     0,              @isscalar);
 % mean image, in RGB order
-ip.addParamValue('image_means',     128,            @ismatrix);
+ip.addParameter('image_means',      128,            @ismatrix);
 % Use horizontally-flipped images during training?
 ip.addParameter('use_flipped',      true,           @islogical);
 % Stride in input image pixels at ROI pooling level (network specific)
 % 16 is true for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
-ip.addParamValue('feat_stride',     16,             @isscalar);
+ip.addParameter('feat_stride',      16,             @isscalar);
+
 % train proposal target only to labled ground-truths or also include
 % other proposal results (selective search, etc.)
-ip.addParamValue('target_only_gt',  true,           @islogical);
+% affect in generating the training samples
+% ('proposal_prepare_image_roidb.m')
+ip.addParameter('target_only_gt',   true,           @islogical);
+
 % random seed
-ip.addParamValue('rng_seed',        6,              @isscalar);
+ip.addParameter('rng_seed',         6,              @isscalar);
+
 % scale of anchor size
-%ip.addParameter('anchor_scale',      2.^[3:5],       @ismatrix);
-ip.addParameter('anchor_scale',      2.^[5:9],       @ismatrix);    % 32-256
+% default
+ip.addParameter('anchor_scale',     2.^[3:5],       @ismatrix);
+ip.addParameter('ratios',           [0.5, 1, 2],    @ismatrix);
 
 %% testing
-ip.addParamValue('test_scales',     600,            @isscalar);
-ip.addParamValue('test_max_size',   1000,           @isscalar);
-ip.addParamValue('test_nms',        0.3,            @isscalar);
-ip.addParamValue('test_binary',     false,          @islogical);
-ip.addParamValue('test_min_box_size',16,            @isscalar);
-ip.addParamValue('test_drop_boxes_runoff_image', ...
-    false,          @islogical);
-
+ip.addParameter('test_scales',          600,            @isscalar);
+ip.addParameter('test_max_size',        1000,           @isscalar);
+ip.addParameter('test_nms',             0.3,            @isscalar);
+ip.addParameter('test_binary',          false,          @islogical);
+ip.addParameter('test_min_box_size',    16,             @isscalar);
+ip.addParameter('test_drop_boxes_runoff_image', ...
+                                        false,          @islogical);
 ip.parse(varargin{:});
 conf = ip.Results;
-
 assert(conf.ims_per_batch == 1, 'currently rpn only supports ims_per_batch == 1');
 
 % if image_means is a file, load it
@@ -83,5 +87,7 @@ end
     proposal_calc_output_size(conf, model.stage1_rpn.test_net_def_file);
 
 conf.anchors = proposal_generate_anchors(model.stage1_rpn.cache_name, ...
-    'scales',  conf.anchor_scale);
+    'scales',   conf.anchor_scale, ...
+    'ratios',   conf.ratios ...
+    );
 end

@@ -1,11 +1,12 @@
-function [ conf_proposal, conf_fast_rcnn ] = set_config( cache_base_proposal, model )
+function [ conf_proposal, conf_fast_rcnn ] = set_config( ...
+    cache_base_proposal, model, detect_exist )
 %SET_CONFIG Summary of this function goes here
 %   Detailed explanation goes here
 
 prefix = ['./output/config_temp' '/' cache_base_proposal];
 mkdir_if_missing(prefix);
 
-if exist([prefix '/conf_proposal.mat'], 'file')
+if exist([prefix '/conf_proposal.mat'], 'file') && detect_exist
     v = load([prefix '/conf_proposal.mat']);
     conf_proposal = v.conf_proposal;
     v = load([prefix '/conf_fast_rcnn.mat']);
@@ -13,7 +14,10 @@ if exist([prefix '/conf_proposal.mat'], 'file')
 else
     conf_proposal = proposal_config(model, ...
         'image_means', model.mean_image, ...
-        'feat_stride', model.feat_stride);
+        'feat_stride', model.feat_stride, ...
+        'anchor_scale', model.anchor_size, ...
+        'ratios', model.ratios ...
+        );
     
     conf_fast_rcnn = fast_rcnn_config('image_means', model.mean_image);
     save([prefix '/conf_proposal.mat'], 'conf_proposal');
