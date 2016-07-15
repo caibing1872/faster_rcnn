@@ -6,7 +6,7 @@ if nargin < 2
 end
 %name = 'ilsvrc_vgg16';
 %name = 'ilsvrc_vgg16_val1';
-dataset_root = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+dataset_root = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
 addpath([dataset_root '/evaluation']);
 
 % exclude_hard = false;       % makes no sense on val2

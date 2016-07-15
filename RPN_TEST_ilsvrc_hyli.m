@@ -7,10 +7,11 @@
 
 function RPN_TEST_ilsvrc_hyli(cache_base_proposal, test_folder, iter_name)
 
-cache_base_proposal = 'NEW_ILSVRC_vgg16';
+cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
 %test_folder = 'ilsvrc14_val2';
 test_folder = 'train14';        % where the intermediate result resides
-iter_name = 'iter_2500';
+iter_name = 'iter_120000';
+%iter_name = 'final';
 %iter_name = 'final';
 %% init
 opts.caffe_version = 'caffe_faster_rcnn';
