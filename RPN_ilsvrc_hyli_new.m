@@ -17,7 +17,7 @@ opts.do_val = true;
 % cache base
 cache_base_proposal = 'NEW_ilsvrc_vgg16_aaa';
 %cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
-opts.gpu_id = 0;
+opts.gpu_id = 1;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
@@ -29,7 +29,7 @@ model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_original_ancho
 model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file = true;
-detect_exist_train_file = false;
+detect_exist_train_file = true;
 use_flipped = true;     % ls139 has flip version
 % ==========================================================
 
@@ -75,9 +75,10 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'solver_def_file',          model.stage1_rpn.solver_def_file, ...
     'net_file',                 net_file, ...
     'cache_name',               model.stage1_rpn.cache_name, ...
-    'snapshot_interval',        10000 ...
+    'snapshot_interval',        20000 ...
     );
 
+fprintf('\nStage one DONE!\n');
 % % final test
 % dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
 %     model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);

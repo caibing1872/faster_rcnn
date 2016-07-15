@@ -188,18 +188,19 @@ while (iter_ < max_iter)
     iter_ = caffe_solver.iter();
 end
 
-% final validation
-if opts.do_val
-    do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
-end
+% % final validation
+% if opts.do_val
+%     do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val);
+% end
+
 % final snapshot
 snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
 save_model_path = snapshot(conf, caffe_solver, bbox_means, bbox_stds, cache_dir, 'final');
+save([cache_dir '/' sprintf('loss_final_iter_%d.mat', max_iter)], 'train_res_total', 'val_results');
 
 diary off;
 caffe.reset_all();
 rng(prev_rng);
-
 end
 
 function val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)
