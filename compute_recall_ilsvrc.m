@@ -77,7 +77,8 @@ for i = 1:length(test_im_list)
 % %             keyboard;
 % %         end
 %     end
-        
+
+    bbox_temp = proposals{i};
     for j = 1:length(cls_list)
         % per class!
         cls_name = cls_list{j};     % wnid   
@@ -88,8 +89,7 @@ for i = 1:length(test_im_list)
         objects = temp(2, temp_ind);
         gt = str2double(squeeze(struct2cell(cell2mat(objects))))';
         gt = gt(:, [1 3 2 4]);
-        
-        bbox_temp = proposals{i};     
+                 
         try
             bbox_candidate = floor(bbox_temp(1:top_k, 1:4));
         catch

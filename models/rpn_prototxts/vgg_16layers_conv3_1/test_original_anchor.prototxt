@@ -426,7 +426,7 @@ layer {
 		lr_mult: 2.0
 	}
    convolution_param{
-	   num_output: 30   # 2(bg/fg) * 15(anchors) 
+	   num_output: 18   # 2(bg/fg) * 9(anchors) 
 	   kernel_size: 1
 	   pad: 0
 	   stride: 1
@@ -453,7 +453,7 @@ layer {
 		lr_mult: 2.0
 	}
    convolution_param{
-	   num_output: 60	# 4 * 15(anchors) 
+	   num_output: 36	# 4 * 9(anchors) 
 	   kernel_size: 1
 	   pad: 0
 	   stride: 1

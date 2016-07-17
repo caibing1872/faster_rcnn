@@ -11,12 +11,12 @@ function anchors = proposal_generate_anchors(cache_name, varargin)
     ip.addRequired('cache_name',                        @isstr);
 
     % the size of the base anchor 
-    ip.addParamValue('base_size',       16,             @isscalar);
+    ip.addParameter('base_size',       16,              @isscalar);
     % ratio list of anchors
-    ip.addParamValue('ratios',          [0.5, 1, 2],    @ismatrix);
+    ip.addParameter('ratios',          [0.5, 1, 2],     @ismatrix);
     % scale list of anchors
-    ip.addParamValue('scales',          2.^[3:5],       @ismatrix);    
-    ip.addParamValue('ignore_cache',    false,          @islogical);
+    ip.addParameter('scales',          2.^(3:5),        @ismatrix);    
+    ip.addParameter('ignore_cache',    true,            @islogical);
     ip.parse(cache_name, varargin{:});
     opts = ip.Results;
 

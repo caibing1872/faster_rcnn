@@ -53,7 +53,7 @@ catch
     end
     
     if isempty(regions)
-        fprintf('Warrning: no ADDITIONAL windows proposal is loaded !\n');
+        fprintf('Warrning: no ADDITIONAL windows proposal is loaded!\n');
         regions.boxes = cell(length(imdb.image_ids), 1);
         if flip
             regions.images = imdb.image_ids(1:2:end);
@@ -115,7 +115,7 @@ end
 
 % ------------------------------------------------------------------------
 function rec = attach_proposals(ilsvrc_rec, boxes, class_to_id, exclude_difficult_samples, flip)
-
+% per IMAGE
 % change selective search order from [y1 x1 y2 x2] to [x1 y1 x2 y2]
 if ~isempty(boxes)
     boxes = boxes(:, [2 1 4 3]);
@@ -162,6 +162,7 @@ rec.feat = [];
 rec.class = uint8(cat(1, gt_classes, zeros(num_boxes, 1)));
 
 rec.gt = cat(1, true(num_gt_boxes, 1), false(num_boxes, 1));
+% 'overlap' is (4 gt + 3 provided_box) x 200 classes
 rec.overlap = zeros(num_gt_boxes+num_boxes, class_to_id.Count, 'single');
 for i = 1:num_gt_boxes
     rec.overlap(:, gt_classes(i)) = ...
