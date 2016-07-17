@@ -15,7 +15,8 @@ opts.do_val = true;
 
 % ======================= USER DEFINE =======================
 % cache base
-cache_base_proposal = 'NEW_ilsvrc_vgg16_aaa';
+cache_base_proposal = 'NEW_ILSVRC_vgg16';
+%cache_base_proposal = 'NEW_ilsvrc_vgg16_aaa';
 %cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
 opts.gpu_id = 1;
 % train14 only, plus val1
@@ -28,9 +29,10 @@ model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_original_ancho
 %ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
-detect_exist_config_file = true;
-detect_exist_train_file = true;
-use_flipped = true;     % ls139 has flip version
+detect_exist_config_file    = true;
+detect_exist_train_file     = true;
+use_flipped                 = true;     
+update_roi                  = true;
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
@@ -49,8 +51,8 @@ caffe.set_mode_gpu();
 
 % config, must be input after setting caffe
 % in the 'proposal_config.m' file
-[conf_proposal, ~] = Faster_RCNN_Train.set_config( cache_base_proposal, ...
-    model, detect_exist_config_file );
+[conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
+    cache_base_proposal, model, detect_exist_config_file );
 
 % train/test data
 % init:
@@ -77,11 +79,10 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'cache_name',               model.stage1_rpn.cache_name, ...
     'snapshot_interval',        20000 ...
     );
-
 fprintf('\nStage one DONE!\n');
-% % final test
-% dataset.roidb_test = Faster_RCNN_Train.do_proposal_test(conf_proposal, ...
-%     model.stage1_rpn, dataset.imdb_test, dataset.roidb_test);
 
 % compute recall
-RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final')
+dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'iter_75000', ...
+    model, dataset, conf_proposal, 'update_roi', update_roi);
+
+

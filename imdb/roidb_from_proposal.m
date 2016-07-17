@@ -36,6 +36,7 @@ mat_name = fullfile(opts.mat_file_prefix, 'trick_new_roidb.mat');
 m = matfile(mat_name, 'Writable', true);
 
 image_ids_ = imdb.image_ids;
+% newly-generated
 images_ = opts.regions.images;
 boxes_ = opts.regions.boxes;
 

@@ -1,20 +1,11 @@
-%clc; 
-%clear; close all;
 function recall_per_cls = compute_recall_ilsvrc(prop_mat_file, top_k)
 if nargin < 2
     top_k = -1;
 end
-%name = 'ilsvrc_vgg16';
-%name = 'ilsvrc_vgg16_val1';
 dataset_root = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
 addpath([dataset_root '/evaluation']);
 
 % exclude_hard = false;       % makes no sense on val2
-
-% given a set of proposals, compute its recall
-% prop_prefix = '/home/hongyang/project/faster_rcnn/output/rpn_cachedir/';
-% prop_detail = sprintf('%s_stage1_rpn/ilsvrc14_val2/aboxes_filtered_ilsvrc14_val2.mat', name);
-% prop_path = [prop_prefix prop_detail];
 prop_path = prop_mat_file;
 % if top_k is not indicated, it will evaluate all proposals
 %top_k = 300; %300; %2000;
@@ -38,7 +29,7 @@ proposals = proposals.aboxes;
 fid = fopen([dataset_root '/data/det_lists/val2.txt'], 'r');
 temp = textscan(fid, '%s%s');
 test_im_list = temp{1};
-test_im_path = [dataset_root '/../ILSVRC2013_DET_val'];
+%test_im_path = [dataset_root '/../ILSVRC2013_DET_val'];
 annopath = [dataset_root '/../ILSVRC2013_DET_bbox_val/'];
 ov = 0.5;
 
