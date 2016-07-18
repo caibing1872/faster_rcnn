@@ -11,6 +11,7 @@ function startup()
 %     a = gpuArray(1); 
 %     clear a;
     curdir = fileparts(mfilename('fullpath'));
+    addpath(genpath(fullfile(curdir, 'deploy')));
     addpath(genpath(fullfile(curdir, 'utils')));
     addpath(genpath(fullfile(curdir, 'functions')));
     addpath(genpath(fullfile(curdir, 'bin')));
