@@ -16,8 +16,8 @@ opts.do_val = true;
 % ======================= USER DEFINE =======================
 share_data_name = 'M04_ls149';
 % cache base
-cache_base_proposal = 'M06_ls149';
-opts.gpu_id = 2;
+cache_base_proposal = 'M06_s31';
+opts.gpu_id = 1;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
@@ -43,8 +43,7 @@ if exist('ft_file', 'var')
 else
     net_file = model.stage1_rpn.init_net_file;
 end
-caffe_dir = './external/caffe/matlab';
-addpath(genpath(caffe_dir));
+
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
