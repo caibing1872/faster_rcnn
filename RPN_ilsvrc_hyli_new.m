@@ -54,6 +54,8 @@ caffe.set_mode_gpu();
 [conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
     cache_base_proposal, model, detect_exist_config_file );
 
+conf_proposal.cache_base_proposal = cache_base_proposal;
+
 % train/test data
 % init:
 %   imdb_train, roidb_train, cell;
