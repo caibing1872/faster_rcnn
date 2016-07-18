@@ -15,14 +15,14 @@ opts.do_val = true;
 
 % ======================= USER DEFINE =======================
 % cache base
-cache_base_proposal = 'M10_s31';
-opts.gpu_id = 4;
+cache_base_proposal = 'M11_s31';
+opts.gpu_id = 6;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_15anchor', ...
-    'test_15anchor');
+model = Model.VGG16_for_Faster_RCNN('solver_15w45w_ilsvrc_25anchor', ...
+    'test_25anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 
@@ -30,8 +30,8 @@ detect_exist_config_file    = true;
 detect_exist_train_file     = true;
 use_flipped                 = true;     
 update_roi                  = false;
-model.anchor_size = 2.^(3:7);       % 15 anchors
-model.ratios = [0.5, 1, 2];
+model.anchor_size = 2.^(3:7);       % 25 anchors
+model.ratios = [0.333, 0.5, 1, 2, 3];
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
