@@ -16,13 +16,13 @@ opts.do_val = true;
 % ======================= USER DEFINE =======================
 share_data_name = 'M04_ls149';
 % cache base
-cache_base_proposal = 'M05_ls149';
-opts.gpu_id = 1;
+cache_base_proposal = 'M06_ls149';
+opts.gpu_id = 2;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_S_15w45w_ilsvrc_9anchor', ...
+model = Model.VGG16_for_Faster_RCNN('solver_S_10w30w_ilsvrc_9anchor_lr0.002', ...
     'test_9anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';

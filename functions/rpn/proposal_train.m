@@ -21,6 +21,7 @@ ip.addParameter('net_file',             '',                 @isstr);
 ip.addParameter('cache_name',           'Zeiler_conv5',     @isstr);
 ip.addParameter('debug',                false,              @isscalar);
 ip.addParameter('solverstate',          '',                 @isstr);
+ip.addParameter('share_data_name',      '',                 @isstr);
 ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
@@ -78,7 +79,11 @@ end
 %% making or loading tran/val data for caffe training
 mkdir_if_missing('./output/training_test_data/');
 % training
-train_data_name = [train_data_name_str '_' conf.cache_base_proposal];
+if ~isempty(opts.share_data_name)
+    train_data_name = [train_data_name_str '_' opts.share_data_name];
+else
+    train_data_name = [train_data_name_str '_' conf.cache_base_proposal];
+end
 if exist(sprintf('./output/training_test_data/%s.mat', train_data_name), 'file') ...
         && opts.detect_exist_train_file
     
@@ -99,7 +104,11 @@ else
     fprintf(' Done and saved.\n\n');
 end
 % validation
-val_data_name = [opts.imdb_val.name '_' conf.cache_base_proposal];
+if ~isempty(opts.share_data_name)
+    val_data_name = [opts.imdb_val.name '_' opts.share_data_name];
+else
+    val_data_name = [opts.imdb_val.name '_' conf.cache_base_proposal];
+end
 if opts.do_val   
     if exist(sprintf('./output/training_test_data/%s.mat', val_data_name), 'file') ...
             && opts.detect_exist_train_file
