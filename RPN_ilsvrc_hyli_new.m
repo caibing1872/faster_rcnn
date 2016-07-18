@@ -43,8 +43,7 @@ if exist('ft_file', 'var')
 else
     net_file = model.stage1_rpn.init_net_file;
 end
-caffe_dir = './external/caffe/matlab';
-addpath(genpath(caffe_dir));
+
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
