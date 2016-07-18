@@ -1,7 +1,7 @@
 % RPN training and testing on ilsvrc
 % 
 % refactor by hyli on July 13 2016
-%
+% This file should descend from 'RPN_ilsvrc_hyli_new.m' and always be updated with master file.
 % ---------------------------------------------------------
 
 clc; clear;
@@ -15,24 +15,20 @@ opts.do_val = true;
 
 % ======================= USER DEFINE =======================
 % cache base
-cache_base_proposal = 'NEW_ILSVRC_vgg16';
-%cache_base_proposal = 'NEW_ilsvrc_vgg16_aaa';
-%cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
+cache_base_proposal = 'M26';
 opts.gpu_id = 1;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-%model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
 model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_original_anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
-model.anchor_size = 2.^(3:5);
-model.ratios = [0.5, 1, 2];
-detect_exist_config_file    = true;
+
+detect_exist_config_file    = false;
 detect_exist_train_file     = true;
 use_flipped                 = true;     
-update_roi                  = true;
+update_roi                  = false;
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
@@ -53,6 +49,14 @@ caffe.set_mode_gpu();
 % in the 'proposal_config.m' file
 [conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
     cache_base_proposal, model, detect_exist_config_file );
+
+% ================= following experiments on s31 ===========
+conf_proposal.fg_thresh = 0.7;
+conf_proposal.bg_thresh_hi = 0.3;
+conf_proposal.scales = [600];
+model.anchor_size = 2.^(3:5);
+model.ratios = [0.5, 1, 2];
+% ==========================================================
 
 % train/test data
 % init:
