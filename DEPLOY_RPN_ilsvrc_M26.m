@@ -15,8 +15,8 @@ opts.do_val = true;
 
 % ======================= USER DEFINE =======================
 % cache base
-cache_base_proposal = 'M27_s31';
-opts.gpu_id = 2;
+cache_base_proposal = 'M26_s31';
+opts.gpu_id = 1;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
@@ -55,7 +55,7 @@ caffe.set_mode_gpu();
 conf_proposal.cache_base_proposal = cache_base_proposal;
 % ================= following experiments on s31 ===========
 conf_proposal.fg_thresh = 0.5;
-conf_proposal.bg_thresh_hi = 0.5;
+conf_proposal.bg_thresh_hi = 0.3;
 conf_proposal.scales = [600];
 % ==========================================================
 

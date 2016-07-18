@@ -23,6 +23,7 @@ external/caffe/models/*
 *.binaryproto
 *leveldb
 *lmdb
+*.out
 
 # build, distribute, and bins (+ python proto bindings)
 external/caffe/build
