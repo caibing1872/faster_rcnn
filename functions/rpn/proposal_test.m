@@ -53,7 +53,7 @@ for i = 1:num_images
     count = count + 1;
 %     tic_toc_print('%s: test %s (%s) %d/%d \n', procid(), ...
 %         opts.suffix, imdb.name, count, num_images);
-    if i == 1 || i == length(test_im_list) || mod(i, show_num)==0
+    if i == 1 || i == length(num_images) || mod(i, show_num)==0
         fprintf('%s: test %s (%s) %d/%d \n', procid(), ...
             opts.suffix, imdb.name, count, num_images);
     end
