@@ -80,9 +80,12 @@ save(fullfile(cache_dir, ['recall_' dataset.imdb_test.name suffix ...
 
 if opts.update_roi
     
+    roidb_regions = [];
     roidb_regions.boxes = aboxes;
     roidb_regions.images = dataset.imdb_test.image_ids;
     
+    if dataset.imdb_test.flip, FLIP = 'flip'; else FLIP = 'unflip'; end
+    PREDEFINED = fullfile(pwd, 'imdb/cache/ilsvrc');
     % update: change some code to save memory
     %     try
     %         ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
@@ -92,14 +95,15 @@ if opts.update_roi
     %     catch
     fprintf('update roidb.rois during test, taking quite a while (brew some coffe or take a walk!:)...\n');
     
-    % save the file 'trick_new_roidb.mat'
+    % update in 'imdb' folder
     roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
-        roidb_regions, 'keep_raw_proposal', false, 'mat_file_prefix', cache_dir);
+        roidb_regions, 'keep_raw_proposal', false, 'mat_file_prefix', PREDEFINED);
     
-    ld = load(fullfile(cache_dir, 'trick_new_roidb.mat'));
+    ld = load(fullfile(PREDEFINED, ['roidb_' roidb.name '_' FLIP '_1.mat']));
     rois = ld.rois;
-    assert(length(rois) == length(roidb.rois));
+    assert(length(rois) == length(dataset.roidb_test.rois));
     clear ld;
     %     end
+    % update in matlab dynamic memory
     dataset.roidb_test.rois = rois;
 end

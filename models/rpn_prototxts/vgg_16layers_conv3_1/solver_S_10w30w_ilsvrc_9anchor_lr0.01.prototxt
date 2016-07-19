@@ -1,8 +1,8 @@
 
 # change the format here
-net: "./models/rpn_prototxts/vgg_16layers_conv3_1/train_val_original_anchor.prototxt"
-base_lr: 0.001
-lr_policy: "step"
+net: "./models/rpn_prototxts/vgg_16layers_conv3_1/train_val_9anchor.prototxt"
+base_lr: 0.01
+lr_policy: "smoothstep"
 gamma: 0.1
 stepsize: 100000
 display: 20

@@ -18,7 +18,6 @@ opts = ip.Results;
 assert(strcmp(opts.roidb.name, opts.imdb.name));
 rois = opts.roidb.rois;
 
-% TODO: check this with stage2
 if ~opts.keep_raw_proposal
     % remove proposal boxes in roidb
     for i = 1:length(rois)
@@ -32,7 +31,8 @@ end
 
 % chunk = 2000 takes 20G ROM
 chunk = 500;
-mat_name = fullfile(opts.mat_file_prefix, 'trick_new_roidb.mat');
+if imdb.flip, FLIP = 'flip'; else FLIP = 'unflip'; end
+mat_name = fullfile(opts.mat_file_prefix, ['roidb_' roidb.name '_' FLIP '_1.mat']);
 m = matfile(mat_name, 'Writable', true);
 
 image_ids_ = imdb.image_ids;

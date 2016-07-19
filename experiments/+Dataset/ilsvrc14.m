@@ -6,17 +6,17 @@ function dataset = ilsvrc14(dataset, usage, use_flip, root_path)
 
 switch usage
     
-    case {'train'}
-        % DEPRECATED
-        % we use all the training pos and val1 (defined by the genius Ross)
-        dataset.imdb_train{1,1} = imdb_from_ilsvrc14(root_path, 'val1', use_flip);
-        
-        for i = 1:200
-            dataset.imdb_train{i+1,1} = imdb_from_ilsvrc14(root_path, ...
-                sprintf('train_pos_%d', i));
-        end
-        dataset.roidb_train = cellfun(@(x) x.roidb_func(x), ...
-            dataset.imdb_train, 'UniformOutput', false);
+%     case {'train'}
+%         % DEPRECATED
+%         % we use all the training pos and val1 (defined by the genius Ross)
+%         dataset.imdb_train{1,1} = imdb_from_ilsvrc14(root_path, 'val1', use_flip);
+%         
+%         for i = 1:200
+%             dataset.imdb_train{i+1,1} = imdb_from_ilsvrc14(root_path, ...
+%                 sprintf('train_pos_%d', i));
+%         end
+%         dataset.roidb_train = cellfun(@(x) x.roidb_func(x), ...
+%             dataset.imdb_train, 'UniformOutput', false);
         
     case {'train14'}
         % IN SERVICE

@@ -1,5 +1,5 @@
-function roidb_new = do_proposal_test(conf, model_stage, imdb, roidb)
-roidb_new = [];
+function roidb = do_proposal_test(conf, model_stage, imdb, roidb)
+%
 % revised by hyli
 cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model_stage.cache_name, imdb.name);
 if isfield(model_stage, 'output_model_file')
@@ -51,7 +51,7 @@ if 1
         assert(length(rois) == length(roidb.rois));
         clear ld;
     end
-    roidb_new.rois = rois;
+    roidb.rois = rois;
 end
 
 end

@@ -21,6 +21,7 @@ ip.addParameter('net_file',             '',                 @isstr);
 ip.addParameter('cache_name',           'Zeiler_conv5',     @isstr);
 ip.addParameter('debug',                false,              @isscalar);
 ip.addParameter('solverstate',          '',                 @isstr);
+ip.addParameter('share_data_name',      '',                 @isstr);
 ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
@@ -78,45 +79,55 @@ end
 %% making or loading tran/val data for caffe training
 mkdir_if_missing('./output/training_test_data/');
 % training
-if exist(sprintf('./output/training_test_data/%s.mat', train_data_name_str), 'file') ...
+if ~isempty(opts.share_data_name)
+    train_data_name = [train_data_name_str '_' opts.share_data_name];
+else
+    train_data_name = [train_data_name_str '_' conf.cache_base_proposal];
+end
+if exist(sprintf('./output/training_test_data/%s.mat', train_data_name), 'file') ...
         && opts.detect_exist_train_file
     
-    ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name_str));
+    ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name));
     image_roidb_train = ld.image_roidb_train;
     bbox_means = ld.bbox_means;
     bbox_stds = ld.bbox_stds;
-    fprintf('Loading existant Caffe training data (%s) ...', train_data_name_str);
+    fprintf('Loading existant Caffe training data (%s) ...', train_data_name);
     clear ld;
     fprintf(' Done.\n');
 else
-    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name_str);
+    fprintf('Preparing Caffe training data (%s) ...\n', train_data_name);
     [image_roidb_train, bbox_means, bbox_stds]...
         = proposal_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
     
-    save(sprintf('./output/training_test_data/%s.mat', train_data_name_str), ...
+    save(sprintf('./output/training_test_data/%s.mat', train_data_name), ...
         'image_roidb_train', 'bbox_means', 'bbox_stds', '-v7.3');
     fprintf(' Done and saved.\n\n');
 end
 % validation
+if ~isempty(opts.share_data_name)
+    val_data_name = [opts.imdb_val.name '_' opts.share_data_name];
+else
+    val_data_name = [opts.imdb_val.name '_' conf.cache_base_proposal];
+end
 if opts.do_val   
-    if exist(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), 'file') ...
+    if exist(sprintf('./output/training_test_data/%s.mat', val_data_name), 'file') ...
             && opts.detect_exist_train_file
-        ld = load(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name));
-        fprintf('Loading existant Caffe validation data (%s) ...', opts.imdb_val.name);
+        ld = load(sprintf('./output/training_test_data/%s.mat', val_data_name));
+        fprintf('Loading existant Caffe validation data (%s) ...', val_data_name);
         image_roidb_val = ld.image_roidb_val;
         shuffled_inds_val = ld.shuffled_inds_val;
         clear ld;
         fprintf(' Done.\n');
     else
         
-        fprintf('Preparing Caffe validation data (%s) ...\n', opts.imdb_val.name);
+        fprintf('Preparing Caffe validation data (%s) ...\n', val_data_name);
         [image_roidb_val]...
             = proposal_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
         % fix validation data
         shuffled_inds_val   = generate_random_minibatch([], image_roidb_val, conf.ims_per_batch);
         shuffled_inds_val   = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
         
-        save(sprintf('./output/training_test_data/%s.mat', opts.imdb_val.name), ...
+        save(sprintf('./output/training_test_data/%s.mat', val_data_name), ...
             'image_roidb_val', 'shuffled_inds_val', '-v7.3');
         fprintf(' Done and saved.\n\n');
     end
