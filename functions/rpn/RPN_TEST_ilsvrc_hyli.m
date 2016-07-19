@@ -49,11 +49,15 @@ cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model.stage1_rpn.cache_name,
 output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
     model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
 
-if exist(fullfile(cache_dir, ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']), 'file')
+test_box_full_name = fullfile(cache_dir, ...
+    ['aboxes_filtered_' dataset.imdb_test.name suffix ...
+    sprintf('_NMS_%s.mat', model.stage1_rpn.nms.note)]);
+
+if exist(test_box_full_name, 'file')
     
     fprintf('skip testing and directly load (%s) ...\n', ...
-        ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']);
-    
+        ['aboxes_filtered_' dataset.imdb_test.name suffix ...
+        sprintf('_NMS_%s.mat', model.stage1_rpn.nms.note)]);
 else
     % UPDATE: NO LONGER save 'aboxes' in the cache.
     % ==============
@@ -68,15 +72,15 @@ else
     % extremely time-consuming
     aboxes = boxes_filter_inline(aboxes, model.stage1_rpn.nms.per_nms_topN, ...
         model.stage1_rpn.nms.nms_overlap_thres, model.stage1_rpn.nms.after_nms_topN, conf_proposal.use_gpu);
-    save(fullfile(cache_dir, ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']), 'aboxes', '-v7.3');
+    save(test_box_full_name, 'aboxes', '-v7.3');
 end
 
-recall_per_cls = compute_recall_ilsvrc(...
-    fullfile(cache_dir, ['aboxes_filtered_' dataset.imdb_test.name suffix '.mat']), 300);
-
+recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300);
 mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+fprintf('model:: %s, mean rec:: %.2f\n\n', iter_name, 100*mean_recall);
 save(fullfile(cache_dir, ['recall_' dataset.imdb_test.name suffix ...
-    sprintf('_%.2f.mat', 100*mean_recall)]), 'recall_per_cls');
+    sprintf('_%.2f_NMS_%s.mat', 100*mean_recall, model.stage1_rpn.nms.note)]), ...
+    'recall_per_cls');
 
 if opts.update_roi
     
@@ -93,7 +97,7 @@ if opts.update_roi
     %         assert(length(rois) == length(roidb.rois));
     %         clear ld;
     %     catch
-    fprintf('update roidb.rois during test, taking quite a while (brew some coffe or take a walk!:)...\n');
+    fprintf('update roidb.rois during test, taking quite a while ...\n');
     
     % update in 'imdb' folder
     roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...

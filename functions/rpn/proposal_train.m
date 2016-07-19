@@ -12,8 +12,8 @@ ip.addParameter('detect_exist_train_file', true,            @islogical);
 ip.addParameter('do_val',               false,              @islogical);
 ip.addParameter('imdb_val',             struct(),           @isstruct);
 ip.addParameter('roidb_val',            struct(),           @isstruct);
-ip.addParameter('val_iters',            500,                @isscalar);
-ip.addParameter('val_interval',         2000,               @isscalar);
+ip.addParameter('val_iters',            8000,                @isscalar);
+ip.addParameter('val_interval',         5000,               @isscalar);
 ip.addParameter('snapshot_interval',    10000,              @isscalar);
 % Max pixel size of a scaled input image
 ip.addParameter('solver_def_file',      '',                 @isstr);

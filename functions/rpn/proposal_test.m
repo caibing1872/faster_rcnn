@@ -48,10 +48,15 @@ aanchors = cell(num_images, 1);
 ascores = cell(num_images, 1);
 
 count = 0;
+show_num = 3000;
 for i = 1:num_images
     count = count + 1;
-    tic_toc_print('%s: test %s (%s) %d/%d \n', procid(), ...
-        opts.suffix, imdb.name, count, num_images);
+%     tic_toc_print('%s: test %s (%s) %d/%d \n', procid(), ...
+%         opts.suffix, imdb.name, count, num_images);
+    if i == 1 || i == length(test_im_list) || mod(i, show_num)==0
+        fprintf('%s: test %s (%s) %d/%d \n', procid(), ...
+            opts.suffix, imdb.name, count, num_images);
+    end
     %th = tic;
     im = imread(imdb.image_at(i));
     [boxes, scores, abox_deltas{i}, aanchors{i}, ascores{i}] = proposal_im_detect(conf, caffe_net, im);
