@@ -33,8 +33,9 @@ cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
 %% if the trained model is saved, skip the following and return
 if ~debug  
     % the famous 'final.caffemodel'
-    save_model_path = fullfile(cache_dir, 'final');
+    save_model_path = fullfile(cache_dir, 'final.caffemodel');
     if exist(save_model_path, 'file')
+        fprintf('find the final model, skip training ...\n');
         return;
     end
 end

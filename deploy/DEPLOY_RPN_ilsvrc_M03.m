@@ -1,10 +1,11 @@
 % RPN training and testing on ilsvrc
 % 
 % refactor by hyli on July 13 2016
-% This file should descend from 'RPN_ilsvrc_hyli_new.m' and always be updated with master file.
+%
 % ---------------------------------------------------------
 
-clc; clear;
+% clc; 
+clear;
 run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
@@ -14,25 +15,28 @@ opts.caffe_version = 'caffe_faster_rcnn';
 opts.do_val = true;
 
 % ======================= USER DEFINE =======================
-share_data_name = 'M04_ls149';
+%share_data_name = 'M04_ls149';
+share_data_name = '';
 % cache base
-cache_base_proposal = 'M07_s31';
-opts.gpu_id = 2;
-% train14 only, plus val1
-opts.train_key = 'train14';
+cache_base_proposal = 'M03_local';
+opts.gpu_id = 1;
+opts.train_key = 'train_val1';
+%opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_S_10w30w_ilsvrc_9anchor_lr0.01', ...
-    'test_9anchor');
+model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', 'test_9anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
-
+model.anchor_size = 2.^(3:5);
+model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
 use_flipped                 = true;     
 update_roi                  = false;
-model.anchor_size = 2.^(3:5);       % 9 anchors
-model.ratios = [0.5, 1, 2];
+skip_stage1_RPN_training    = false;
+
+model.stage1_rpn.nms.note = '0.7';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = 0.7;
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
@@ -86,9 +90,9 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'snapshot_interval',        20000, ...
     'share_data_name',          share_data_name ...
     );
-fprintf('\nStage one DONE!\n');
 
 % compute recall and update roidb on TEST
+fprintf('\nStage one proposal test ...\n');
 dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
     model, dataset, conf_proposal, 'update_roi', update_roi);
 

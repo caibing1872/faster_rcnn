@@ -1,10 +1,10 @@
 % RPN training and testing on ilsvrc
-% 
+%
 % refactor by hyli on July 13 2016
 %
 % ---------------------------------------------------------
 
-% clc; 
+% clc;
 clear;
 run('./startup');
 %% init
@@ -18,10 +18,10 @@ opts.do_val = true;
 %share_data_name = 'M04_ls149';
 share_data_name = '';
 % cache base
-cache_base_proposal = 'NEW_ILSVRC_ls139';
-opts.gpu_id = 2;
-% train14 only, plus val1
-opts.train_key = 'train14';
+cache_base_proposal = 'M03_local';
+opts.gpu_id = 1;
+opts.train_key = 'train_val1';
+%opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', 'test_9anchor');
@@ -31,12 +31,11 @@ model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
-use_flipped                 = true;     
+use_flipped                 = true;
 update_roi                  = false;
-skip_stage1_RPN_training    = true;
 
-model.stage1_rpn.nms.note = '0.5';   % must be a string
-model.stage1_rpn.nms.nms_overlap_thres = 0.5;
+model.stage1_rpn.nms.note = '0.7';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = 0.7;
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
