@@ -11,17 +11,6 @@ model.pre_trained_net_file = fullfile(pwd, 'models', 'pre_trained_models', 'vgg_
 model.feat_stride = 16;
 
 %% stage 1 rpn, inited from pre-trained network
-% fail, the whole traning data
-%model.stage1_rpn.solver_def_file = fullfile(pwd, 'models', 'rpn_prototxts', ...
-    %'vgg_16layers_conv3_1', 'solver_10w30w_ilsvrc.prototxt');
-
-% for val1 as training data
-%model.stage1_rpn.solver_def_file = fullfile(pwd, 'models', 'rpn_prototxts', ...
-    %'vgg_16layers_conv3_1', 'solver_60k80k.prototxt');
-
-% for train14+val1
-%model.stage1_rpn.solver_def_file = fullfile(pwd, 'models', 'rpn_prototxts', ...
-    %'vgg_16layers_conv3_1', 'solver_12w20w_ilsvrc.prototxt');
 model.stage1_rpn.solver_def_file = fullfile(pwd, 'models', 'rpn_prototxts', ...
     'vgg_16layers_conv3_1', sprintf('%s.prototxt', solver_name));
 
@@ -30,6 +19,7 @@ model.stage1_rpn.test_net_def_file = fullfile(pwd, 'models', 'rpn_prototxts', ..
 model.stage1_rpn.init_net_file = model.pre_trained_net_file;
 
 % rpn test setting
+model.stage1_rpn.nms.note                       = 'default';
 model.stage1_rpn.nms.per_nms_topN               = -1;
 model.stage1_rpn.nms.nms_overlap_thres       	= 0.7;
 model.stage1_rpn.nms.after_nms_topN         	= 2000;

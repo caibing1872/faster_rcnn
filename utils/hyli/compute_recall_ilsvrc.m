@@ -2,7 +2,9 @@ function recall_per_cls = compute_recall_ilsvrc(prop_mat_file, top_k)
 if nargin < 2
     top_k = -1;
 end
-dataset_root = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+%name = 'ilsvrc_vgg16';
+%name = 'ilsvrc_vgg16_val1';
+dataset_root = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
 addpath([dataset_root '/evaluation']);
 
 % exclude_hard = false;       % makes no sense on val2
@@ -47,9 +49,13 @@ for i = 1:200
 end
 wnid_list = extractfield(recall_per_cls, 'wnid')';
 
+show_num = 3000;
 for i = 1:length(test_im_list)
     
-    tic_toc_print('evaluate image: (%d/%d)\n', i, length(test_im_list));
+    %tic_toc_print('evaluate image: (%d/%d)\n', i, length(test_im_list));
+    if i == 1 || i == length(test_im_list) || mod(i, show_num)==0
+        fprintf('compute recall: (%d/%d)\n', i, length(test_im_list));
+    end
     % per image!
     % first collect GT boxes of this class in this image
     rec = VOCreadxml([annopath, test_im_list{i}, '.xml']);
@@ -101,8 +107,8 @@ disp('');
 for i = 1:200
     recall_per_cls(i).recall = ...
         recall_per_cls(i).correct_inst/recall_per_cls(i).total_inst;
-    fprintf('cls #%3d: %s\t\trecall: %.4f\n', ...
-        i, recall_per_cls(i).name, recall_per_cls(i).recall);
+%     fprintf('cls #%3d: %s\t\trecall: %.4f\n', ...
+%         i, recall_per_cls(i).name, recall_per_cls(i).recall);
 end
-mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-disp(mean_recall);
+% mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+% disp(mean_recall);

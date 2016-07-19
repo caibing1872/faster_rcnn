@@ -4,7 +4,8 @@
 %
 % ---------------------------------------------------------
 
-clc; clear;
+% clc; 
+clear;
 run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
@@ -14,17 +15,16 @@ opts.caffe_version = 'caffe_faster_rcnn';
 opts.do_val = true;
 
 % ======================= USER DEFINE =======================
+%share_data_name = 'M04_ls149';
+share_data_name = '';
 % cache base
-cache_base_proposal = 'NEW_ILSVRC_vgg16';
-%cache_base_proposal = 'NEW_ilsvrc_vgg16_aaa';
-%cache_base_proposal = 'NEW_ILSVRC_vgg16_ls139';
-opts.gpu_id = 1;
+cache_base_proposal = 'NEW_ILSVRC_ls139';
+opts.gpu_id = 2;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-%model = Model.VGG16_for_Faster_RCNN('solver_12w20w_ilsvrc');
-model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_original_anchor');
+model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', 'test_9anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 model.anchor_size = 2.^(3:5);
@@ -32,7 +32,11 @@ model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
 use_flipped                 = true;     
-update_roi                  = true;
+update_roi                  = false;
+skip_stage1_RPN_training    = true;
+
+model.stage1_rpn.nms.note = '0.5';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = 0.5;
 % ==========================================================
 
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
@@ -54,6 +58,11 @@ caffe.set_mode_gpu();
     cache_base_proposal, model, detect_exist_config_file );
 
 conf_proposal.cache_base_proposal = cache_base_proposal;
+% ================= following experiments on s31 ===========
+conf_proposal.fg_thresh = 0.7;
+conf_proposal.bg_thresh_hi = 0.3;
+conf_proposal.scales = [600];
+% ==========================================================
 
 % train/test data
 % init:
@@ -78,12 +87,13 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'solver_def_file',          model.stage1_rpn.solver_def_file, ...
     'net_file',                 net_file, ...
     'cache_name',               model.stage1_rpn.cache_name, ...
-    'snapshot_interval',        20000 ...
+    'snapshot_interval',        20000, ...
+    'share_data_name',          share_data_name ...
     );
-fprintf('\nStage one DONE!\n');
 
 % compute recall and update roidb on TEST
-dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'iter_75000', ...
+fprintf('\nStage one proposal test ...\n');
+dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
     model, dataset, conf_proposal, 'update_roi', update_roi);
 
 %% fast rcnn train
