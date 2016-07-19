@@ -30,7 +30,7 @@ catch
     save(fullfile(cache_dir, ['aboxes_filtered_' imdb.name suffix '.mat']), 'aboxes', '-v7.3');
 end
 
-if 0
+if 1
     % currently not in use
     roidb_regions.boxes = aboxes;
     roidb_regions.images = imdb.image_ids;

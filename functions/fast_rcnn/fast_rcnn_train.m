@@ -51,13 +51,6 @@ diary(log_file);
 prev_rng = seed_rand(conf.rng_seed);
 caffe.set_random_seed(conf.rng_seed);
 
-%     % set gpu/cpu
-%     if conf.use_gpu
-%         caffe.set_mode_gpu();
-%     else
-%         caffe.set_mode_cpu();
-%     end
-
 disp('conf:');
 disp(conf);
 disp('opts:');
