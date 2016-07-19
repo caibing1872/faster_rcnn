@@ -1,10 +1,10 @@
 % RPN training and testing on ilsvrc
-%
+% 
 % refactor by hyli on July 13 2016
 %
 % ---------------------------------------------------------
 
-% clc;
+% clc; 
 clear;
 run('./startup');
 %% init
@@ -18,10 +18,10 @@ opts.do_val = true;
 %share_data_name = 'M04_ls149';
 share_data_name = '';
 % cache base
-cache_base_proposal = 'M03_local';
-opts.gpu_id = 1;
-opts.train_key = 'train_val1';
-%opts.train_key = 'train14';
+cache_base_proposal = 'M02_ls139';
+opts.gpu_id = 2;
+%opts.train_key = 'train_val1';
+opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', 'test_9anchor');
@@ -31,8 +31,9 @@ model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
-use_flipped                 = true;
+use_flipped                 = false;     
 update_roi                  = false;
+skip_stage1_RPN_training    = false;
 
 model.stage1_rpn.nms.note = '0.7';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.7;
@@ -96,14 +97,10 @@ dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
     model, dataset, conf_proposal, 'update_roi', update_roi);
 
 %% fast rcnn train
-fprintf('\nStage two Fast-RCNN cascade...\n');
-model_stage.output_model_file = fast_rcnn_train(...
-    conf_fast_rcnn, ...
-    dataset.imdb_train, dataset.roidb_train, ...
-    'do_val',           opts.do_val, ...
-    'imdb_val',         dataset.imdb_test, ...
-    'roidb_val',        dataset.roidb_test, ...
-    'solver_def_file',  model_stage.solver_def_file, ...
-    'net_file',         model_stage.init_net_file, ...
-    'cache_name',       model_stage.cache_name ...
-    );
+% model_stage.output_model_file = fast_rcnn_train(conf, dataset.imdb_train, dataset.roidb_train, ...
+%                                 'do_val',           do_val, ...
+%                                 'imdb_val',         dataset.imdb_test, ...
+%                                 'roidb_val',        dataset.roidb_test, ...
+%                                 'solver_def_file',  model_stage.solver_def_file, ...
+%                                 'net_file',         model_stage.init_net_file, ...
+%                                 'cache_name',       model_stage.cache_name);

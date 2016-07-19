@@ -1,6 +1,6 @@
 function [image_roidb, bbox_means, bbox_stds] = ...
     fast_rcnn_prepare_image_roidb(conf, imdbs, roidbs, bbox_means, bbox_stds)
-% [image_roidb, bbox_means, bbox_stds] = fast_rcnn_prepare_image_roidb(conf, imdbs, roidbs, cache_img, bbox_means, bbox_stds)
+%
 %   Gather useful information from imdb and roidb
 %   pre-calculate mean (bbox_means) and std (bbox_stds) of the regression
 %   term for normalization
