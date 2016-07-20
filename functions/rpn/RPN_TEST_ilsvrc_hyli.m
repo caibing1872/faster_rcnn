@@ -8,29 +8,25 @@
 function dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, test_folder, ...
     iter_name, varargin)
 
-% cache_base_proposal = 'NEW_ILSVRC_vgg16';
-% cache_base_proposal = 'NEW_ilsvrc_vgg16_anchor_size';
-% test_folder = 'ilsvrc14_val2';
-% test_folder = 'train14';        % where the intermediate result resides
-% iter_name = 'iter_20000';
-% iter_name = 'final';
 ip = inputParser;
 ip.addRequired('cache_base_proposal',                       @isstr);
+% 'test foler' means where the trained model (.caffemodel) resides.
 ip.addRequired('test_folder',                               @isstr);
 ip.addRequired('iter_name',                                 @isstr);
 ip.addRequired('model',                                     @isstruct);
 ip.addRequired('dataset',                                   @isstruct);
 ip.addRequired('conf_proposal',                             @isstruct);
 
+% by default all test programs use GPU=0
+ip.addParameter('mult_thr_nms',         false,              @islogical);
+ip.addParameter('nms_iou_thrs',         [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55],  @isnumeric);
+ip.addParameter('max_per_image',        [2000, 1000,  400,  200,  100,   40,   20,   10],  @isnumeric);
 ip.addParameter('gpu_id',               0,                  @isscalar);
 ip.addParameter('update_roi',           false,              @islogical);
 ip.parse(cache_base_proposal, test_folder, iter_name, varargin{:});
 opts = ip.Results;
 
 %% init
-% opts.caffe_version = 'caffe_faster_rcnn';
-% caffe_dir = './external/caffe/matlab';
-% addpath(genpath(caffe_dir));
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
@@ -44,15 +40,14 @@ test_file = [test_folder '/'];
 suffix = ['_' iter_name];
 
 %% compute recall
-
-cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', model.stage1_rpn.cache_name, dataset.imdb_test.name);
-output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
-    model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
-
+cache_dir = fullfile(pwd, 'output', 'rpn_cachedir', ...
+    model.stage1_rpn.cache_name, dataset.imdb_test.name);
 test_box_full_name = fullfile(cache_dir, ...
     ['aboxes_filtered_' dataset.imdb_test.name suffix ...
     sprintf('_NMS_%s.mat', model.stage1_rpn.nms.note)]);
 
+output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
+    model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
 if exist(test_box_full_name, 'file')
     
     fprintf('skip testing and directly load (%s) ...\n', ...
@@ -70,8 +65,17 @@ else
     % ==============
     % ===== NMS ====
     % extremely time-consuming
-    aboxes = boxes_filter_inline(aboxes, model.stage1_rpn.nms.per_nms_topN, ...
-        model.stage1_rpn.nms.nms_overlap_thres, model.stage1_rpn.nms.after_nms_topN, conf_proposal.use_gpu);
+    
+    if ~opts.mult_thr_nms
+        aboxes = boxes_filter_inline(aboxes, model.stage1_rpn.nms.per_nms_topN, ...
+            model.stage1_rpn.nms.nms_overlap_thres, model.stage1_rpn.nms.after_nms_topN, conf_proposal.use_gpu);
+    else
+        aboxes = AttractioNet_postprocess(aboxes, 'thresholds', -inf, 'use_gpu', true, ...
+            'mult_thr_nms',     true, ...
+            'nms_iou_thrs',     opts.nms_iou_thrs, ...
+            'max_per_image',    opts.max_per_image);
+    end
+    
     save(test_box_full_name, 'aboxes', '-v7.3');
 end
 
