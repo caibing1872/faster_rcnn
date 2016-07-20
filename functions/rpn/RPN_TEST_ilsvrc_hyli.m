@@ -57,25 +57,29 @@ else
     % UPDATE: NO LONGER save 'aboxes' in the cache.
     % ==============
     % ==== TEST ====
+    disp('nms:');
+    disp(model.stage1_rpn.nms);
     aboxes = proposal_test(conf_proposal, dataset.imdb_test, ...
         'net_def_file',     model.stage1_rpn.test_net_def_file, ...
         'net_file',         output_model_file, ...
         'cache_name',       model.stage1_rpn.cache_name, ...
         'suffix',           suffix);
+    
     % ==============
     % ===== NMS ====
     % extremely time-consuming
-    
     if ~opts.mult_thr_nms
         aboxes = boxes_filter_inline(aboxes, model.stage1_rpn.nms.per_nms_topN, ...
             model.stage1_rpn.nms.nms_overlap_thres, model.stage1_rpn.nms.after_nms_topN, conf_proposal.use_gpu);
     else
-        aboxes = AttractioNet_postprocess(aboxes, 'thresholds', -inf, 'use_gpu', true, ...
-            'mult_thr_nms',     true, ...
-            'nms_iou_thrs',     opts.nms_iou_thrs, ...
-            'max_per_image',    opts.max_per_image);
-    end
-    
+        fprintf('do multi-thres nms, taking quite a while (brew some coffe or take a walk!:)...\n');
+        parfor i = 1:length(aboxes)
+            aboxes{i} = AttractioNet_postprocess(aboxes{i}, 'thresholds', -inf, 'use_gpu', true, ...
+                'mult_thr_nms',     true, ...
+                'nms_iou_thrs',     opts.nms_iou_thrs, ...
+                'max_per_image',    opts.max_per_image);
+        end
+    end  
     save(test_box_full_name, 'aboxes', '-v7.3');
 end
 
