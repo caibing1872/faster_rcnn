@@ -20,8 +20,8 @@ train_key = 'train14';
 model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', test_proto_name);
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
 % ----------------------------------------------
-model.stage1_rpn.nms.note = '0.6';   % must be a string
-model.stage1_rpn.nms.nms_overlap_thres = 0.6;
+model.stage1_rpn.nms.note = '0.7';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = [0.7, 0.65, 0.6, 0.55, 0.5];
 % ==========================================================
 
 caffe.reset_all();
