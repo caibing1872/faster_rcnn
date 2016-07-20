@@ -35,13 +35,24 @@ use_flipped                 = true;
 update_roi                  = false;
 
 %model.stage1_rpn.nms.note = '0.7';   % must be a string
-model.stage1_rpn.nms.note = 'multiNMS_default_set';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.7;
-model.stage1_rpn.nms.mult_thr_nms = true;
-model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
-model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,   10];
+
+model.stage1_rpn.nms.note = 'multiNMS_2';   % must be a string
+
+% default
+% model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
+% model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,   10];
+
+% % set 1, 84.12
+% model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
+% model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  400,  300,   200,   100,   50];
+
+% set 2
+model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80,  0.75, 0.70, 0.65,  0.60, 0.55,  0.50];
+model.stage1_rpn.nms.max_per_image  = [2000, 50,    200,  400,  600,   800,  1000,  100];
 % ==========================================================
 
+if isnan(str2double(model.stage1_rpn.nms.note)), model.stage1_rpn.nms.mult_thr_nms = true; end
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
 % finetune
 if exist('ft_file', 'var')
