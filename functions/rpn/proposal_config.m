@@ -59,7 +59,7 @@ ip.addParameter('ratios',           [0.5, 1, 2],    @ismatrix);
 %% testing
 ip.addParameter('test_scales',          600,            @isscalar);
 ip.addParameter('test_max_size',        1000,           @isscalar);
-ip.addParameter('test_nms',             0.3,            @isscalar);
+%ip.addParameter('test_nms',             0.3,            @isscalar);
 ip.addParameter('test_binary',          false,          @islogical);
 ip.addParameter('test_min_box_size',    16,             @isscalar);
 ip.addParameter('test_drop_boxes_runoff_image', ...

@@ -10,7 +10,7 @@ ip.addRequired('imdb',                      @isstruct);
 ip.addRequired('roidb',                     @isstruct);
 ip.addRequired('regions',                   @isstruct);
 ip.addParameter('keep_raw_proposal', true,  @islogical);
-ip.addParameter('mat_file_prefix', '',      @isstr);
+ip.addParameter('mat_file', '',      @isstr);
 
 ip.parse(imdb, roidb, regions, varargin{:});
 opts = ip.Results;
@@ -31,8 +31,9 @@ end
 
 % chunk = 2000 takes 20G ROM
 chunk = 500;
-if imdb.flip, FLIP = 'flip'; else FLIP = 'unflip'; end
-mat_name = fullfile(opts.mat_file_prefix, ['roidb_' roidb.name '_' FLIP '_1.mat']);
+%if imdb.flip, FLIP = 'flip'; else FLIP = 'unflip'; end
+%mat_name = fullfile(opts.mat_file_prefix, ['roidb_' roidb.name '_' FLIP '_1.mat']);
+mat_name = opts.mat_file;
 m = matfile(mat_name, 'Writable', true);
 
 image_ids_ = imdb.image_ids;
