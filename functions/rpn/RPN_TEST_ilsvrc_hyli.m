@@ -126,7 +126,7 @@ for i = 1:length(detect_name)
     end
     
     % 2. compute recall
-    recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300);
+    recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
     mean_recall = mean(extractfield(recall_per_cls, 'recall'));
     fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
     

@@ -1,17 +1,12 @@
-function recall_per_cls = compute_recall_ilsvrc(prop_mat_file, top_k)
-if nargin < 2
-    top_k = -1;
-end
-%name = 'ilsvrc_vgg16';
-%name = 'ilsvrc_vgg16_val1';
+function recall_per_cls = compute_recall_ilsvrc(prop_mat_file, top_k, imdb)
+% if top_k is set negative, then all boxes will be evaluated
+
 dataset_root = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
 addpath([dataset_root '/evaluation']);
+prop_path = prop_mat_file;
+ov = 0.5;
 
 % exclude_hard = false;       % makes no sense on val2
-prop_path = prop_mat_file;
-% if top_k is not indicated, it will evaluate all proposals
-%top_k = 300; %300; %2000;
-
 % if exclude_hard
 %     fid = fopen([dataset_root '/data/det_lists/val.txt'], 'r');
 %     temp = textscan(fid, '%s%s');
@@ -28,12 +23,25 @@ prop_path = prop_mat_file;
 proposals = load(prop_path);
 proposals = proposals.aboxes;
 
-fid = fopen([dataset_root '/data/det_lists/val2.txt'], 'r');
+switch imdb.name
+    case 'ilsvrc14_val2'
+        assert(imdb.flip==false);
+        fid = fopen([dataset_root '/data/det_lists/val2.txt'], 'r');
+        annopath = [dataset_root '/../ILSVRC2013_DET_bbox_val/'];
+        
+    case 'ilsvrc14_val1'
+        fid = fopen([dataset_root '/data/det_lists/val1.txt'], 'r');
+        if imdb.flip, proposals = proposals(1:2:end); end
+        annopath = [dataset_root '/../ILSVRC2013_DET_bbox_val/'];
+        
+    case 'ilsvrc14_train14'
+        fid = fopen([dataset_root '/data/det_lists/train14.txt'], 'r');
+        if imdb.flip, proposals = proposals(1:2:end); end
+        annopath = [dataset_root '/../ILSVRC2014_DET_bbox_train/'];
+end
 temp = textscan(fid, '%s%s');
 test_im_list = temp{1};
-%test_im_path = [dataset_root '/../ILSVRC2013_DET_val'];
-annopath = [dataset_root '/../ILSVRC2013_DET_bbox_val/'];
-ov = 0.5;
+assert(length(proposals)==length(test_im_list));
 
 % init stats
 ld = load([dataset_root '/data/meta_det.mat']);
@@ -110,5 +118,3 @@ for i = 1:200
 %     fprintf('cls #%3d: %s\t\trecall: %.4f\n', ...
 %         i, recall_per_cls(i).name, recall_per_cls(i).recall);
 end
-% mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-% disp(mean_recall);
