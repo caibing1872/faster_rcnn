@@ -39,6 +39,7 @@ model = opts.model;
 conf_proposal = opts.conf_proposal;
 imdb = opts.imdb;
 roidb = opts.roidb;
+nms = model.stage1_rpn.nms;
 
 test_file = [test_folder '/'];
 suffix = ['_' iter_name];
@@ -71,51 +72,61 @@ for i = 1:length(detect_name)
             ['aboxes_filtered_' imdb.name suffix ...
             sprintf('_NMS_%s.mat', detect_name{i})]);
     else
+        disp('nms:');
+        disp(nms);
+        output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
+            model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
         
-        if ~forward_flag
-            
+        % update: if opts.update_roi is set true, skip this and do NMS within
+        % the proposal_test procedure, hopefully save memory!
+        % case 1: won't update roi
+        if ~opts.update_roi
+            if ~forward_flag
+                % ==============
+                % ==== TEST ====
+                % UPDATE: NO LONGER save 'aboxes' in the cache.
+                raw_aboxes = proposal_test(conf_proposal, ...
+                    imdb, ...
+                    'net_def_file',     model.stage1_rpn.test_net_def_file, ...
+                    'net_file',         output_model_file, ...
+                    'cache_name',       model.stage1_rpn.cache_name, ...
+                    'suffix',           suffix);
+                % only execute once
+                forward_flag = true;
+            end
             % ==============
-            % ==== TEST ====
-            % UPDATE: NO LONGER save 'aboxes' in the cache.
-            disp('nms:');
-            disp(model.stage1_rpn.nms);
-            
-            output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
-                model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
-            
-            raw_aboxes = proposal_test(conf_proposal, ...
-                imdb, ...
+            % ===== NMS ====
+            % extremely time-consuming
+            if ~opts.mult_thr_nms
+                aboxes = boxes_filter_inline(raw_aboxes, ...
+                    nms.per_nms_topN, ...               % -1
+                    nms.nms_overlap_thres(i), ...       % 0.6, 0.7, ...
+                    nms.after_nms_topN, ...             % 2000
+                    conf_proposal.use_gpu);
+            else
+                fprintf('do multi-thres nms, taking quite a while (brew some coffe or take a walk!:)...\n');
+                parfor kk = 1:length(raw_aboxes)
+                    aboxes{kk} = AttractioNet_postprocess(raw_aboxes{kk}, 'thresholds', -inf, 'use_gpu', true, ...
+                        'mult_thr_nms',     true, ...
+                        'nms_iou_thrs',     opts.nms_iou_thrs, ...
+                        'max_per_image',    opts.max_per_image);
+                end
+            end
+        else
+            % case 2: will update roi
+            % also, the following assertion holds:
+            assert(length(model.stage1_rpn.nms.nms_overlap_thres) == 1);
+            aboxes = proposal_test_plus_nms(conf_proposal, imdb, nms, ...
                 'net_def_file',     model.stage1_rpn.test_net_def_file, ...
                 'net_file',         output_model_file, ...
                 'cache_name',       model.stage1_rpn.cache_name, ...
-                'suffix',           suffix);
-            % only execute once
-            forward_flag = true;
-        end
-        
-        % ==============
-        % ===== NMS ====
-        % extremely time-consuming
-        if ~opts.mult_thr_nms
-            aboxes = boxes_filter_inline(raw_aboxes, ...
-                model.stage1_rpn.nms.per_nms_topN, ...          % -1
-                model.stage1_rpn.nms.nms_overlap_thres(i), ...     % 0.6, 0.7, ...
-                model.stage1_rpn.nms.after_nms_topN, ...        % 2000
-                conf_proposal.use_gpu);
-        else
-            fprintf('do multi-thres nms, taking quite a while (brew some coffe or take a walk!:)...\n');
-            parfor kk = 1:length(raw_aboxes)
-                aboxes{kk} = AttractioNet_postprocess(raw_aboxes{kk}, 'thresholds', -inf, 'use_gpu', true, ...
-                    'mult_thr_nms',     true, ...
-                    'nms_iou_thrs',     opts.nms_iou_thrs, ...
-                    'max_per_image',    opts.max_per_image);
-            end
+                'suffix',           suffix);     
         end
         save(test_box_full_name, 'aboxes', '-v7.3');
     end
     
     % 2. compute recall
-    recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300);
+    recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
     mean_recall = mean(extractfield(recall_per_cls, 'recall'));
     fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
     
@@ -129,11 +140,11 @@ if opts.update_roi
     
     assert(length(model.stage1_rpn.nms.nms_overlap_thres) == 1);
     
-    if imdb.flip, FLIP = 'flip'; else FLIP = 'unflip'; end  
+    if imdb.flip, FLIP = 'flip'; else FLIP = 'unflip'; end
     update_roi_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
         ['roidb_' roidb.name ...
         '_' FLIP sprintf('_%s.mat', opts.update_roi_name)]);
-      
+    
     if ~exist(update_roi_file, 'file')
         
         fprintf('update roidb.rois, taking quite a while ...\n');
