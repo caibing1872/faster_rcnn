@@ -18,8 +18,8 @@ opts.do_val = true;
 %share_data_name = 'M04_ls149';
 share_data_name = '';
 % cache base
-cache_base_proposal = 'M02_ls139';
-opts.gpu_id = 2;
+cache_base_proposal = 'M02_s31';
+opts.gpu_id = 3;
 %opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 
@@ -93,9 +93,11 @@ model.stage1_rpn.output_model_file = proposal_train(...
 
 % compute recall and update roidb on TEST
 fprintf('\nStage one proposal test ...\n');
-dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
-    model, dataset, conf_proposal, 'update_roi', update_roi);
+RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
+    model, dataset.imdb_test, dataset.roidb_test, ...
+    conf_proposal, 'update_roi', update_roi, 'gpu_id', opts.gpu_id);
 
+exit;
 %% fast rcnn train
 % model_stage.output_model_file = fast_rcnn_train(conf, dataset.imdb_train, dataset.roidb_train, ...
 %                                 'do_val',           do_val, ...
