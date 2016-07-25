@@ -1,4 +1,4 @@
-function save_model_path = fast_rcnn_train(conf, imdb_train, roidb_train, varargin)
+function save_model_path = fast_rcnn_train(conf, imdb_train, roidb_train, train_key, varargin)
 % save_model_path = fast_rcnn_train(conf, imdb_train, roidb_train, varargin)
 % --------------------------------------------------------
 % Fast R-CNN
@@ -12,40 +12,45 @@ ip = inputParser;
 ip.addRequired('conf',                                  @isstruct);
 ip.addRequired('imdb_train',                            @iscell);
 ip.addRequired('roidb_train',                           @iscell);
+ip.addRequired('train_key',                             @isstr);
+
 ip.addParameter('do_val',               false,          @isscalar);
 ip.addParameter('imdb_val',             struct(),       @isstruct);
 ip.addParameter('roidb_val',            struct(),       @isstruct);
 ip.addParameter('val_iters',            500,            @isscalar);
 ip.addParameter('val_interval',         2000,           @isscalar);
 ip.addParameter('snapshot_interval',    10000,          @isscalar);
-ip.addParameter('solver_def_file',      fullfile(pwd, 'models', 'Zeiler_conv5', 'solver.prototxt'), @isstr);
-ip.addParameter('net_file',             fullfile(pwd, 'models', 'Zeiler_conv5', 'Zeiler_conv5'), @isstr);
+ip.addParameter('solver_def_file',      '',             @isstr);
+ip.addParameter('net_file',             '',             @isstr);
 ip.addParameter('cache_name',           'Zeiler_conv5', @isstr);
-
-ip.parse(conf, imdb_train, roidb_train, varargin{:});
+ip.addParameter('debug',                false,          @isscalar);
+ip.addParameter('solverstate',          '',             @isstr);
+ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
+debug = opts.debug;
 %% try to find trained model
-imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
-cache_dir = fullfile(pwd, 'output', 'fast_rcnn_cachedir', opts.cache_name, imdbs_name);
+%imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
+cache_dir = fullfile(pwd, 'output', 'fast_rcnn_cachedir', opts.cache_name, opts.train_key);
 save_model_path = fullfile(cache_dir, 'final');
 if exist(save_model_path, 'file')
     return;
 end
 
 %% init
-% init caffe solver
-mkdir_if_missing(cache_dir);
-caffe_log_file_base = fullfile(cache_dir, 'caffe_log');
+% init caffe log
+mkdir_if_missing([cache_dir '/caffe_log']);
+caffe_log_file_base = fullfile(cache_dir, 'caffe_log/train_');
 caffe.init_log(caffe_log_file_base);
+% init matlab log
+timestamp = datestr(datevec(now()), 'yyyymmdd_HHMMSS');
+mkdir_if_missing(fullfile(cache_dir, 'matlab_log'));
+log_file = fullfile(cache_dir, 'matlab_log', ['train_', timestamp, '.txt']);
+diary(log_file);
+
+% init caffe solver
 caffe_solver = caffe.Solver(opts.solver_def_file);
 caffe_solver.net.copy_from(opts.net_file);
-
-% init log
-timestamp = datestr(datevec(now()), 'yyyymmdd_HHMMSS');
-mkdir_if_missing(fullfile(cache_dir, 'log'));
-log_file = fullfile(cache_dir, 'log', ['train_', timestamp, '.txt']);
-diary(log_file);
 
 % set random seed
 prev_rng = seed_rand(conf.rng_seed);
@@ -57,32 +62,66 @@ disp('opts:');
 disp(opts);
 
 %% making tran/val data
-fprintf('Preparing training data...');
-[image_roidb_train, bbox_means, bbox_stds]...
-    = fast_rcnn_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
-fprintf('Done.\n');
-
-if opts.do_val
-    fprintf('Preparing validation data...');
-    [image_roidb_val]...
-        = fast_rcnn_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
-    fprintf('Done.\n');
+mkdir_if_missing('./output/training_test_data/');
+% training
+train_data_name = ['FCN_train_' conf.cache_base_proposal];
+if exist(sprintf('./output/training_test_data/%s.mat', train_data_name), 'file')
     
-    % fix validation data
-    shuffled_inds_val = generate_random_minibatch([], image_roidb_val, conf.ims_per_batch);
-    shuffled_inds_val = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
+    ld = load(sprintf('./output/training_test_data/%s.mat', train_data_name));
+    image_roidb_train = ld.image_roidb_train;
+    bbox_means = ld.bbox_means;
+    bbox_stds = ld.bbox_stds;
+    fprintf('Loading existant FCN training data (%s) ...', train_data_name);
+    clear ld;
+    fprintf(' Done.\n');
+else
+    fprintf('Preparing FCN training data (%s) ...\n', train_data_name);
+    [image_roidb_train, bbox_means, bbox_stds]...
+        = fast_rcnn_prepare_image_roidb(conf, opts.imdb_train, opts.roidb_train);
+    save(sprintf('./output/training_test_data/%s.mat', train_data_name), ...
+        'image_roidb_train', 'bbox_means', 'bbox_stds', '-v7.3');
+    fprintf(' Done and saved.\n\n');
 end
 
-%%  try to train/val with images which have maximum size potentially, to validate whether the gpu memory is enough
+% validation
+val_data_name = ['FCN_val_' conf.cache_base_proposal];
+if opts.do_val
+    
+    if exist(sprintf('./output/training_test_data/%s.mat', val_data_name), 'file')
+        
+        ld = load(sprintf('./output/training_test_data/%s.mat', val_data_name));
+        fprintf('Loading existant FCN validation data (%s) ...', val_data_name);
+        image_roidb_val = ld.image_roidb_val;
+        shuffled_inds_val = ld.shuffled_inds_val;
+        clear ld;
+        fprintf(' Done.\n');
+    else
+        fprintf('Preparing FCN validation data (%s) ...\n', val_data_name);
+        [image_roidb_val]...
+            = fast_rcnn_prepare_image_roidb(conf, opts.imdb_val, opts.roidb_val, bbox_means, bbox_stds);
+        % fix validation data
+        shuffled_inds_val = generate_random_minibatch([], image_roidb_val, conf.ims_per_batch);
+        shuffled_inds_val = shuffled_inds_val(randperm(length(shuffled_inds_val), opts.val_iters));
+        
+        save(sprintf('./output/training_test_data/%s.mat', val_data_name), ...
+            'image_roidb_val', 'shuffled_inds_val', '-v7.3');
+        fprintf(' Done and saved.\n\n');
+    end
+end
+
+% try to train/val with images which have maximum size potentially,
+% to validate whether the gpu memory is enough
 num_classes = size(image_roidb_train(1).overlap, 2);
 check_gpu_memory(conf, caffe_solver, num_classes, opts.do_val);
 
 %% training
 shuffled_inds = [];
 train_results = [];
+train_res_total = [];
 val_results = [];
 iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
+th = tic;
 
 while (iter_ < max_iter)
     caffe_solver.net.set_phase('train');
@@ -98,9 +137,15 @@ while (iter_ < max_iter)
     % one iter SGD update
     caffe_solver.net.set_input_data(net_inputs);
     caffe_solver.step(1);
-    
     rst = caffe_solver.net.get_output();
     train_results = parse_rst(train_results, rst);
+    train_res_total = parse_rst(train_res_total, rst);
+    
+    if debug && ~mod(iter_, 20)
+        fprintf('iter: %d\n', iter_)
+        %check_loss(rst, caffe_solver, net_inputs);
+        fprintf('\n');
+    end
     
     % do valdiation per val_interval iterations
     if ~mod(iter_, opts.val_interval)
@@ -131,10 +176,14 @@ while (iter_ < max_iter)
     % snapshot
     if ~mod(iter_, opts.snapshot_interval)
         snapshot(caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
+        save([cache_dir '/' sprintf('loss_%d.mat', iter_)], 'train_res_total', 'val_results');
     end
-    
+    % training progress report
     if ~mod(iter_, 100)
-        fprintf('iter %d\n', iter_);
+        time = toc(th);
+        fprintf('iter %d, loss %.4f, time: %.2f min, estTime: %.2f hour\n', ...
+            iter_, (10*rst(2).data + rst(3).data), time/60, (time/3600)*(max_iter-iter_)/100);
+        th = tic;
     end
     iter_ = caffe_solver.iter();
 end
@@ -142,6 +191,7 @@ end
 % final snapshot
 snapshot(caffe_solver, bbox_means, bbox_stds, cache_dir, sprintf('iter_%d', iter_));
 save_model_path = snapshot(caffe_solver, bbox_means, bbox_stds, cache_dir, 'final');
+save([cache_dir '/' sprintf('loss_final_iter_%d.mat', max_iter)], 'train_res_total', 'val_results');
 
 diary off;
 caffe.reset_all();
@@ -233,9 +283,12 @@ biase = ...
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights);
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 2, biase);
 
-model_path = fullfile(cache_dir, file_name);
+model_path = [fullfile(cache_dir, file_name) '.caffemodel'];
 caffe_solver.net.save(model_path);
-fprintf('Saved as %s\n', model_path);
+fprintf('Saved as %s\n', [file_name '.caffemodel']);
+solverstate_path = [fullfile(cache_dir, file_name) '.solverstate'];
+caffe_solver.snapshot(solverstate_path, model_path);
+fprintf('Saved as %s\n', [file_name '.solverstate']);
 
 % restore net to original state
 caffe_solver.net.set_params_data(bbox_pred_layer_name, 1, weights_back);

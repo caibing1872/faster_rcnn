@@ -22,9 +22,8 @@ imdbs = imdbs(:);
 roidbs = roidbs(:);
 
 %% step 1
-fprintf(' || begin to merge im_roidb from many dbs (taking quite a while on fucking ilsvrc)...\n');
+fprintf(' || RPN: begin to merge im_roidb from many dbs (taking quite a while on fucking ilsvrc)...\n');
 if conf.target_only_gt
-    
     image_roidb = ...
         cellfun(@(x, y) ... // @(imdbs, roidbs)
         arrayfun(@(z) ... //@([1:length(x.image_ids)])
@@ -47,7 +46,7 @@ fprintf(' || done! (%d images!)\n', num_images);
 
 %% step 2: enhance roidb to contain bounding-box regression targets
 % taking too much memory on imagenet training data
-fprintf(' || begin to append bbox regression targets...\n');
+fprintf(' || RPN: begin to append bbox regression targets...\n');
 stats = [];
 % original code
 [image_roidb, bbox_means, bbox_stds, ~] = ...
@@ -70,8 +69,7 @@ parfor i = 1:num_images
     
     % for fcn, anchors are concated as [channel, height, width],
     %   where channel is the fastest dimension.
-    % note by hyli: change input args to debug
-    
+    % note by hyli: change input args to debug 
     %     [anchors, im_scales] = proposal_locate_anchors(conf, ...
     %         image_roidb_cell{i}.im_size);
     [anchors, im_scales] = proposal_locate_anchors(conf, image_roidb_cell{i});

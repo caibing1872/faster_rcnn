@@ -125,15 +125,16 @@ for i = 1:length(detect_name)
         save(test_box_full_name, 'aboxes', '-v7.3');
     end
     
-    % 2. compute recall
-    recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
-    mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-    fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
-    
-    % 3. save the detailed recall file
-    save(fullfile(cache_dir, ['recall_' imdb.name suffix ...
-        sprintf('_%.2f_NMS_%s.mat', 100*mean_recall, detect_name{i})]), ...
-        'recall_per_cls');
+% temporarily commented for debug in stage 2    
+%     % 2. compute recall
+%     recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
+%     mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+%     fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
+%     
+%     % 3. save the detailed recall file
+%     save(fullfile(cache_dir, ['recall_' imdb.name suffix ...
+%         sprintf('_%.2f_NMS_%s.mat', 100*mean_recall, detect_name{i})]), ...
+%         'recall_per_cls');
 end
 
 if opts.update_roi
@@ -157,6 +158,8 @@ if opts.update_roi
             roidb_regions, 'keep_raw_proposal', false, 'mat_file', update_roi_file);
     end
     
+    fprintf('loading roi file in imdb folder: %s\n', ...
+        ['roidb_' roidb.name '_' FLIP sprintf('_%s.mat', opts.update_roi_name)]);
     ld = load(update_roi_file);
     rois_load = ld.rois;
     assert(length(rois_load) == length(roidb.rois));

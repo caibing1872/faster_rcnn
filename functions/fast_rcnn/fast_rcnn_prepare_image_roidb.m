@@ -24,6 +24,8 @@ end
 imdbs = imdbs(:);
 roidbs = roidbs(:);
 
+%% step 1
+fprintf(' || Fast RCNN: begin to merge im_roidb from many dbs (taking quite a while on fucking ilsvrc)...\n');
 image_roidb = ...
     cellfun(@(x, y) ... // @(imdbs, roidbs)
     arrayfun(@(z) ... //@([1:length(x.image_ids)])
@@ -33,9 +35,15 @@ image_roidb = ...
     imdbs, roidbs, 'UniformOutput', false);
 
 image_roidb = cat(1, image_roidb{:});
+num_images = length(image_roidb);
+fprintf(' || done! (%d images!)\n', num_images);
 
-% enhance roidb to contain bounding-box regression targets
-[image_roidb, bbox_means, bbox_stds] = append_bbox_regression_targets(conf, image_roidb, bbox_means, bbox_stds);
+%% step 2: enhance roidb to contain bounding-box regression targets
+fprintf(' || Fast RCNN: begin to append bbox regression targets...\n');
+[image_roidb, bbox_means, bbox_stds] = ...
+    append_bbox_regression_targets(conf, image_roidb, bbox_means, bbox_stds);
+
+fprintf(' || done!\n');
 end
 
 function [image_roidb, means, stds] = append_bbox_regression_targets(conf, image_roidb, means, stds)
@@ -45,7 +53,7 @@ num_images = length(image_roidb);
 % Infer number of classes from the number of columns in gt_overlaps
 num_classes = size(image_roidb(1).overlap, 2);
 valid_imgs = true(num_images, 1);
-for i = 1:num_images
+parfor i = 1:num_images
     rois = image_roidb(i).boxes;
     [image_roidb(i).bbox_targets, valid_imgs(i)] = ...
         compute_targets(conf, rois, image_roidb(i).overlap);
@@ -107,7 +115,7 @@ overlap = full(overlap);
 % ensure ROIs are floats
 rois = single(rois);
 
-bbox_targets = zeros(size(rois, 1), 5, 'single');
+bbox_targets = zeros(size(rois, 1), 5, 'double');
 
 % Indices of ground-truth ROIs
 gt_inds = find(max_overlaps == 1);
@@ -131,6 +139,7 @@ if ~isempty(gt_inds)
     
     bbox_targets(ex_inds, :) = [max_labels(ex_inds), regression_label];
 end
+bbox_targets = sparse(bbox_targets);
 
 % Select foreground ROIs as those with >= fg_thresh overlap
 is_fg = max_overlaps >= conf.fg_thresh;
