@@ -38,7 +38,7 @@ update_roi_name             = '1';
 model.stage1_rpn.nms.note = '0.7';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.7;
 
-model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
+%model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
 
 % default
 model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
