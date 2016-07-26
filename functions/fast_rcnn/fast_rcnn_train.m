@@ -169,7 +169,7 @@ while (iter_ < max_iter)
         
         show_state(iter_, train_results, val_results);
         train_results = [];
-        val_results = [];
+        %val_results = [];
         diary; diary; % flush diary
     end
     
