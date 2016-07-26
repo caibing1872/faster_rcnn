@@ -11,8 +11,8 @@ run('./startup');
 % ======================= USER DEFINE =======================
 
 % cache base
-cache_base_proposal = 'NEW_ILSVRC_ls139';
-gpu_id = 0;
+cache_base_proposal = 'M27_s31';
+gpu_id = 2;
 test_proto_name = 'test_9anchor';
 train_key = 'train14';
 
@@ -49,7 +49,8 @@ if strcmp(caffemodel_dir(1).name, 'final.caffemodel')
     
     fprintf('\nComputing final model ...\n');
     RPN_TEST_ilsvrc_hyli(cache_base_proposal, train_key, 'final', ...
-        model, dataset, conf_proposal, 'update_roi', false);
+        model, dataset.imdb_test, dataset.roidb_test, conf_proposal, ...
+        'update_roi', false, 'gpu_id', gpu_id);
     caffemodel_dir = caffemodel_dir(2:end);
 end
 
@@ -62,7 +63,8 @@ for i = 1:length(list_descend)
     iter_name = ['iter_' num2str(list_descend(i))];
     fprintf('\nComputing %s model ...\n', iter_name);
     RPN_TEST_ilsvrc_hyli(cache_base_proposal, train_key, iter_name, ...
-        model, dataset, conf_proposal, 'update_roi', false);
+        model, dataset.imdb_test, dataset.roidb_test, conf_proposal, ...
+        'update_roi', false, 'gpu_id', gpu_id);
 end
 
 exit;

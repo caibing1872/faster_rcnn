@@ -21,7 +21,7 @@ opts.gpu_id = 5;
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_original_anchor');
+model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_9anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 

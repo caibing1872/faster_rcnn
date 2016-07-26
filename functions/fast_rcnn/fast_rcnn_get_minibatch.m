@@ -124,7 +124,7 @@ function [labels, overlaps, rois, bbox_targets, bbox_loss_weights] = ...
     num_classes = size(image_roidb(1).overlap, 2);
     
     [bbox_targets, bbox_loss_weights] = get_bbox_regression_labels(conf, ...
-        image_roidb.bbox_targets(keep_inds, :), num_classes);
+        full(image_roidb.bbox_targets(keep_inds, :)), num_classes);
     
 end
 
