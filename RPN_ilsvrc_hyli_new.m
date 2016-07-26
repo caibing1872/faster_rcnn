@@ -9,39 +9,41 @@ clear;
 run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
-
-opts.caffe_version = 'caffe_faster_rcnn';
-% whether or not do validation during training
 opts.do_val = true;
-
+% ===========================================================
 % ======================= USER DEFINE =======================
-%share_data_name = 'M04_ls149';
-share_data_name = '';
-% cache base
-%cache_base_proposal = 'NEW_ILSVRC_ls139';
-cache_base_proposal = 'M02_s31';
 opts.gpu_id = 0;
-%opts.train_key = 'train_val1';
+% opts.train_key = 'train_val1';
 opts.train_key = 'train14';
-
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN(...
     'solver_10w30w_ilsvrc_9anchor', 'test_9anchor', ...     % rpn
-    'solver_5w15w', 'test_1' ...                           % fast_rcnn
+    'solver_5w15w_2', 'test_2' ...                          % fast_rcnn
     );
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
+
+% --------------------------- FCN ----------------------------
+update_roi                  = true;     % if false, won't update roidb
+update_roi_name             = '1';      % name in the imdb folder after adding NMS additional boxes
+skip_rpn_test               = true;     % won't do test and compute recall
+% FCN cache folder name AND data name
+fcn_data_name               = 'M02_s31';         
+% --------------------------- RPN ----------------------------
+% share_data_name = 'M04_ls149';
+share_data_name = '';
+% cache base
+% cache_base_proposal = 'NEW_ILSVRC_ls139';
+cache_base_RPN = 'M02_s31';
+
 model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
 use_flipped                 = false;
-update_roi                  = true;
-update_roi_name             = '1';
 
 model.stage1_rpn.nms.note = '0.7';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.7;
-
 %model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
 % default
 model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
@@ -56,10 +58,11 @@ model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,
 % model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
 % model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  500,  500,  500,  500,  300];
 % ==========================================================
+% ==========================================================
 
 model.stage1_rpn.nms.mult_thr_nms = false;
 if isnan(str2double(model.stage1_rpn.nms.note)), model.stage1_rpn.nms.mult_thr_nms = true; end
-model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
+model = Faster_RCNN_Train.set_cache_folder(cache_base_RPN, fcn_data_name, model);
 % finetune
 if exist('ft_file', 'var')
     net_file = ft_file;
@@ -71,19 +74,17 @@ end
 caffe.reset_all();
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
-
 % config, must be input after setting caffe
 % in the 'proposal_config.m' file
 [conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
-    cache_base_proposal, model, detect_exist_config_file );
-
-conf_proposal.cache_base_proposal = cache_base_proposal;
-conf_fast_rcnn.cache_base_proposal = cache_base_proposal;
-% ================= following experiments on s31 ===========
+    cache_base_RPN, model, detect_exist_config_file );
+conf_proposal.cache_base_proposal = cache_base_RPN;
+conf_fast_rcnn.cache_base_proposal = fcn_data_name;
+% ================ following experiments on s31 (RPN) ===========
 conf_proposal.fg_thresh = 0.7;
 conf_proposal.bg_thresh_hi = 0.3;
 conf_proposal.scales = [600];
-% ==========================================================
+% ===============================================================
 
 % train/test data
 % init:
@@ -96,7 +97,7 @@ dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
 dataset = Dataset.ilsvrc14(dataset, opts.train_key, use_flipped, root_path);
 
 %%  stage one proposal
-fprintf('\nStage one proposal TRAINING...\n');
+cprintf('blue', '\nStage one proposal TRAINING...\n');
 % train
 model.stage1_rpn.output_model_file = proposal_train(...
     conf_proposal, ...
@@ -112,33 +113,35 @@ model.stage1_rpn.output_model_file = proposal_train(...
     'share_data_name',      share_data_name ...
     );
 
-% compute recall and update roidb on TEST
-fprintf('\nStage one proposal TEST on val data ...\n');
-dataset.roidb_test = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
-    model, dataset.imdb_test, dataset.roidb_test, conf_proposal, ...     
+% test: compute recall and update roidb on TEST
+cprintf('blue', '\nStage one proposal TEST on val data ...\n');
+dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
+    'train14', 'final', model, ...
+    dataset.imdb_test, dataset.roidb_test, conf_proposal, ...
     'mult_thr_nms',         model.stage1_rpn.nms.mult_thr_nms, ...
     'nms_iou_thrs',         model.stage1_rpn.nms.nms_iou_thrs, ...
     'max_per_image',        model.stage1_rpn.nms.max_per_image, ...
     'update_roi',           update_roi, ...
     'update_roi_name',      update_roi_name, ...
+    'skip_rpn_test',        skip_rpn_test, ...
     'gpu_id',               opts.gpu_id ...
     );
 
-% compute recall and update roidb on training data
-fprintf('\nStage one proposal TEST on train data...\n');
+% test: compute recall and update roidb on TRAIN
+cprintf('blue', '\nStage one proposal TEST on train data...\n');
 dataset.roidb_train = cellfun(@(x,y) RPN_TEST_ilsvrc_hyli(...
-    cache_base_proposal, 'train14', 'final', model, ...
-    x, y, conf_proposal, ...     
+    'train14', 'final', model, x, y, conf_proposal, ...
     'mult_thr_nms',         model.stage1_rpn.nms.mult_thr_nms, ...
     'nms_iou_thrs',         model.stage1_rpn.nms.nms_iou_thrs, ...
     'max_per_image',        model.stage1_rpn.nms.max_per_image, ...
     'update_roi',           update_roi, ...
     'update_roi_name',      update_roi_name, ...
+    'skip_rpn_test',        skip_rpn_test, ...
     'gpu_id',               opts.gpu_id ...
     ), dataset.imdb_train, dataset.roidb_train, 'UniformOutput', false);
 
 %% fast rcnn train
-fprintf('\nStage two Fast-RCNN cascade TRAINING...\n');
+cprintf('blue', '\nStage two Fast-RCNN cascade TRAINING...\n');
 model_stage.output_model_file = fast_rcnn_train(...
     conf_fast_rcnn, ...
     dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
@@ -150,6 +153,7 @@ model_stage.output_model_file = fast_rcnn_train(...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
     'val_iters',            500, ...
     'val_interval',         20000, ...
-    'snapshot_interval',    20000 ...
+    'snapshot_interval',    20000, ...
+    'binary',               true ...
     );
 exit;
