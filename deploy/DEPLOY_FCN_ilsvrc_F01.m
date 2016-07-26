@@ -12,13 +12,13 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
-opts.gpu_id = 2;
+opts.gpu_id = 0;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN(...
     'solver_10w30w_ilsvrc_9anchor', 'test_9anchor', ...     % rpn
-    'solver_5w15w_2', 'test_2' ...                          % fast_rcnn
+    'solver_5w15w_1', 'test_1' ...                          % fast_rcnn
     );
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
@@ -27,21 +27,16 @@ model = Model.VGG16_for_Faster_RCNN(...
 update_roi                  = false;     % if false, won't update roidb
 update_roi_name             = '1';      % name in the imdb folder after adding NMS additional boxes
 skip_rpn_test               = true;     % won't do test and compute recall
-binary_train                = true;
+binary_train                = false;
 % FCN cache folder name
-cache_base_FCN              = 'F03_ls149';         
-share_data_FCN              = 'F01_ls149';
-fcn_fg_thresh               = 0.5;
-fcn_bg_thresh_hi            = 0.5;
-fcn_bg_thresh_lo            = 0.1;
-fcn_scales                  = [600];
-fcn_fg_fraction             = 0.5;
-fcn_max_size                = 1000;
+cache_base_FCN              = 'F01_ls149';         
+share_data_FCN              = '';
 % --------------------------- RPN ----------------------------
-% cache_base_RPN = 'NEW_ILSVRC_ls139';
-cache_base_RPN = 'M02_s31';
 % share_data_RPN = 'M04_ls149';
 share_data_RPN = '';
+% cache base
+% cache_base_RPN = 'NEW_ILSVRC_ls139';
+cache_base_RPN = 'M02_s31';
 
 model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
@@ -64,10 +59,6 @@ model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,
 % % set 3 and 4 (no minus previous boxes)
 % model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
 % model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  500,  500,  500,  500,  300];
-
-fg_thresh = 0.7;
-bg_thresh_hi = 0.3;
-scales = [600];
 % ==========================================================
 % ==========================================================
 
@@ -90,22 +81,16 @@ caffe.set_mode_gpu();
 [conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
     cache_base_RPN, model, detect_exist_config_file );
 conf_proposal.cache_base_proposal = cache_base_RPN;
-conf_proposal.fg_thresh = fg_thresh;
-conf_proposal.bg_thresh_hi = bg_thresh_hi;
-conf_proposal.scales = scales;
-
 if isempty(share_data_FCN)
     conf_fast_rcnn.data_name = cache_base_FCN;
 else
     conf_fast_rcnn.data_name = share_data_FCN;
 end
-
-conf_fast_rcnn.fcn_fg_thresh        = fcn_fg_thresh;
-conf_fast_rcnn.fcn_bg_thresh_hi     = fcn_bg_thresh_hi;
-conf_fast_rcnn.fcn_bg_thresh_lo     = fcn_bg_thresh_lo;
-conf_fast_rcnn.fcn_scales           = fcn_scales;
-conf_fast_rcnn.fcn_fg_fraction      = fcn_fg_fraction;
-conf_fast_rcnn.fcn_max_size         = fcn_max_size;
+% ================ following experiments on s31 (RPN) ===========
+conf_proposal.fg_thresh = 0.7;
+conf_proposal.bg_thresh_hi = 0.3;
+conf_proposal.scales = [600];
+% ===============================================================
 
 % train/test data
 % init:

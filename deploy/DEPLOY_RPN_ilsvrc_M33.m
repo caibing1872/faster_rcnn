@@ -15,13 +15,13 @@ opts.do_val = true;
 
 % ======================= USER DEFINE =======================
 % cache base
-cache_base_proposal = 'M27_s31';
-opts.gpu_id = 2;
+cache_base_proposal = 'M33_s31';
+opts.gpu_id = 3;
 % train14 only, plus val1
 opts.train_key = 'train14';
 
 % load paramters from the 'models' folder
-model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc', 'test_9anchor');
+model = Model.VGG16_for_Faster_RCNN('solver_20w60w_ilsvrc_9anchor', 'test_9anchor');
 % finetune: uncomment the following if init from another model
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 
@@ -56,7 +56,8 @@ conf_proposal.cache_base_proposal = cache_base_proposal;
 % ================= following experiments on s31 ===========
 conf_proposal.fg_thresh = 0.5;
 conf_proposal.bg_thresh_hi = 0.5;
-conf_proposal.scales = [600];
+conf_proposal.scales = [800];
+conf_proposal.test_scales = [800];
 % ==========================================================
 
 % train/test data
@@ -87,9 +88,11 @@ model.stage1_rpn.output_model_file = proposal_train(...
 fprintf('\nStage one DONE!\n');
 
 % compute recall and update roidb on TEST
-dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
-    model, dataset, conf_proposal, 'update_roi', update_roi, 'gpu_id', opts.gpu_id);
+RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
+    model, dataset.imdb_test, dataset.roidb_test, conf_proposal, ...
+    'update_roi', update_roi, 'gpu_id', opts.gpu_id);
 
+exit;
 %% fast rcnn train
 % model_stage.output_model_file = fast_rcnn_train(conf, dataset.imdb_train, dataset.roidb_train, ...
 %                                 'do_val',           do_val, ...

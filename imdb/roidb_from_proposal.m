@@ -74,7 +74,7 @@ for i = 1 : ceil(length(rois)/chunk)
                 
         for j = 1 : num_gt_boxes
             temp(kk).overlap(:, gt_classes(j)) = ...
-                max( full( temp(kk).overlap(:, gt_classes(j)) ), boxoverlap(all_boxes, gt_boxes(j, :)) );
+                max( full(temp(kk).overlap(:, gt_classes(j))), boxoverlap(all_boxes, gt_boxes(j, :)) );
         end
         temp(kk).overlap = sparse(double( temp(kk).overlap ));
     end

@@ -90,7 +90,7 @@ fprintf('\nStage one DONE!\n');
 
 % compute recall and update roidb on TEST
 dataset = RPN_TEST_ilsvrc_hyli(cache_base_proposal, 'train14', 'final', ...
-    model, dataset, conf_proposal, 'update_roi', update_roi);
+    model, dataset, conf_proposal, 'update_roi', update_roi, 'gpu_id', opts.gpu_id);
 
 %% fast rcnn train
 % model_stage.output_model_file = fast_rcnn_train(conf, dataset.imdb_train, dataset.roidb_train, ...

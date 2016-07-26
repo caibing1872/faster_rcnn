@@ -6,6 +6,31 @@ input_dim: 3
 input_dim: 224
 input_dim: 224
 
+input: "rois"
+input_dim: 1 # to be changed on-the-fly to num ROIs
+input_dim: 5 # [batch ind, x1, y1, x2, y2] zero-based indexing
+input_dim: 1
+input_dim: 1
+
+input: "labels"
+input_dim: 1 # to be changed on-the-fly to match num ROIs
+input_dim: 1
+input_dim: 1
+input_dim: 1
+
+input: "bbox_targets"
+input_dim: 1  # to be changed on-the-fly to match num ROIs
+input_dim: 8  # 4 * (1+1) (=2) classes
+input_dim: 1
+input_dim: 1
+
+input: "bbox_loss_weights"
+input_dim: 1  # to be changed on-the-fly to match num ROIs
+input_dim: 8  # 4 * (2+1) (=2) classes
+input_dim: 1
+input_dim: 1
+
+
 layer {
 	bottom: "data"
 	top: "conv1_1"
@@ -379,116 +404,158 @@ layer {
 	type: "ReLU"
 }
 
-#-----------------------layer +-------------------------
 layer {
-   name: "conv_proposal1"
-   type: "Convolution"
-   bottom: "conv5_3"
-   top: "conv_proposal1"
+	bottom: "conv5_3"
+	bottom: "rois"
+	top: "pool5"
+	name: "roi_pool5"
+	type: "ROIPooling"
+	roi_pooling_param {
+		pooled_w: 7
+		pooled_h: 7
+		spatial_scale: 0.0625  # (1/16)
+	}
+}
+
+layer {
+	bottom: "pool5"
+	top: "fc6"
+	name: "fc6"
 	param {
 		lr_mult: 1.0
 	}
 	param {
 		lr_mult: 2.0
 	}
-   convolution_param{
-	   num_output: 512
-	   kernel_size: 3
-	   pad: 1
-	   stride: 1
-	   weight_filler {
-		 type: "gaussian"
-		 std: 0.01
-	   }
-	   bias_filler {
-		 type: "constant"
-		 value: 0
-	   }
-   }
+	type: "InnerProduct"
+	inner_product_param {
+		num_output: 4096
+	}
 }
 
 layer {
-   name: "relu_proposal1"
-   type: "ReLU"
-   bottom: "conv_proposal1"
-   top: "conv_proposal1"
+	bottom: "fc6"
+	top: "fc6"
+	name: "relu6"
+	type: "ReLU"
 }
 
 layer {
-   name: "proposal_cls_score"
-   type: "Convolution"
-   bottom: "conv_proposal1"
-   top: "proposal_cls_score"
+	bottom: "fc6"
+	top: "fc6"
+	name: "drop6"
+	type: "Dropout"
+	dropout_param {
+		dropout_ratio: 0.5
+	}
+}
+
+layer {
+	bottom: "fc6"
+	top: "fc7"
+	name: "fc7"
 	param {
 		lr_mult: 1.0
 	}
 	param {
 		lr_mult: 2.0
 	}
-   convolution_param{
-	   num_output: 50   # 2(bg/fg) * 25(anchors) 
-	   kernel_size: 1
-	   pad: 0
-	   stride: 1
-	   weight_filler {
-		 type: "gaussian"
-		 std: 0.01
-	   }
-	   bias_filler {
-		 type: "constant"
-		 value: 0
-	   }
-   }
+	type: "InnerProduct"
+	inner_product_param {
+		num_output: 4096
+	}
 }
 
 layer {
-   name: "proposal_bbox_pred"
-   type: "Convolution"
-   bottom: "conv_proposal1"
-   top: "proposal_bbox_pred"
+	bottom: "fc7"
+	top: "fc7"
+	name: "relu7"
+	type: "ReLU"
+}
+
+layer {
+	bottom: "fc7"
+	top: "fc7"
+	name: "drop7"
+	type: "Dropout"
+	dropout_param {
+		dropout_ratio: 0.5
+	}
+}
+
+layer {
+	bottom: "fc7"
+	top: "cls_score"
+	name: "cls_score"               # hyli: be cautious about this!
 	param {
 		lr_mult: 1.0
 	}
 	param {
 		lr_mult: 2.0
 	}
-   convolution_param{
-	   num_output: 100	# 4 * 25(anchors) 
-	   kernel_size: 1
-	   pad: 0
-	   stride: 1
-	   weight_filler {
-		 type: "gaussian"
-		 std: 0.01
-	   }
-	   bias_filler {
-		 type: "constant"
-		 value: 0
-	   }
-   }
-}
-
-#-----------------------output------------------------
-
-# to enable the calculation of softmax loss, we first reshape blobs related to SoftmaxWithLoss
-layer {
-   bottom: "proposal_cls_score"
-   top: "proposal_cls_score_reshape"
-   name: "proposal_cls_score_reshape"
-   type: "Reshape"
-   reshape_param{
-	   shape {
-			dim: 0 
-			dim: 2
-			dim: -1 
-			dim: 0
+	type: "InnerProduct"
+	inner_product_param {           # 2 classes
+		num_output: 2              
+		weight_filler {
+			type: "gaussian"
+			std: 0.01
+		}
+		bias_filler {
+			type: "constant"
+			value: 0
 		}
 	}
 }
 
 layer {
-   name: "proposal_cls_prob"
-   type: "Softmax"
-   bottom: "proposal_cls_score_reshape"
-   top: "proposal_cls_prob"
+	bottom: "fc7"
+	top: "bbox_pred"
+	name: "bbox_pred"
+	type: "InnerProduct"
+	param {
+		lr_mult: 1.0
+	}
+	param {
+		lr_mult: 2.0
+	}
+	inner_product_param {
+		num_output: 8          # 8: 4*(1+1)
+		weight_filler {
+			type: "gaussian"
+			std: 0.001
+		}
+		bias_filler {
+			type: "constant"
+			value: 0
+		}
+	}
 }
+
+layer {
+	name: "loss"
+	type: "SoftmaxWithLoss"
+	bottom: "cls_score"
+	bottom: "labels"
+	top: "loss_cls"
+	loss_weight: 1
+}
+
+layer {
+	name: "accuarcy"
+	type: "Accuracy"
+	bottom: "cls_score"
+	bottom: "labels"
+	top: "accuarcy"
+}
+
+layer {
+	name: "loss_bbox"
+	type: "SmoothL1Loss"
+	bottom: "bbox_pred"
+	bottom: "bbox_targets"
+	bottom: "bbox_loss_weights"
+	top: "loss_bbox"
+	loss_weight: 1
+}
+
+

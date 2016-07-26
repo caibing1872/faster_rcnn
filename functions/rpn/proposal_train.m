@@ -215,7 +215,8 @@ caffe.reset_all();
 rng(prev_rng);
 end
 
-function val_results = do_validation(conf, caffe_solver, proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)
+function val_results = do_validation(conf, caffe_solver, ...
+    proposal_generate_minibatch_fun, image_roidb_val, shuffled_inds_val)
 val_results = [];
 
 caffe_solver.net.set_phase('test');

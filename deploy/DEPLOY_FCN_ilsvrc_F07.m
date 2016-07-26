@@ -12,7 +12,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
-opts.gpu_id = 2;
+opts.gpu_id = 3;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
@@ -29,13 +29,13 @@ update_roi_name             = '1';      % name in the imdb folder after adding N
 skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
-cache_base_FCN              = 'F03_ls149';         
+cache_base_FCN              = 'F07_ls139';         
 share_data_FCN              = 'F01_ls149';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.5;
 fcn_bg_thresh_lo            = 0.1;
-fcn_scales                  = [600];
-fcn_fg_fraction             = 0.5;
+fcn_scales                  = [800];
+fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
 % --------------------------- RPN ----------------------------
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
