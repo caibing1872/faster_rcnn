@@ -30,7 +30,7 @@ skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
 cache_base_FCN              = 'F04_ls149';         
-share_data_FCN              = 'F01_ls149';
+share_data_FCN              = '';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.5;
 fcn_bg_thresh_lo            = 0;
@@ -107,7 +107,7 @@ conf_fast_rcnn.fcn_scales           = fcn_scales;
 conf_fast_rcnn.fcn_fg_fraction      = fcn_fg_fraction;
 conf_fast_rcnn.fcn_max_size         = fcn_max_size;
 
-% train/test data
+% train/test dataemt-
 % init:
 %   imdb_train, roidb_train, cell;
 %   imdb_test, roidb_test, struct
@@ -174,7 +174,7 @@ model_stage.output_model_file = fast_rcnn_train(...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
     'val_iters',            500, ...
     'val_interval',         20000, ...
-    'snapshot_interval',    20000, ...
+    'snapshot_interval',    10000, ...
     'binary',               binary_train ...
     );
 exit;
