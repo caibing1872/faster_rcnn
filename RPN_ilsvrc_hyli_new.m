@@ -12,6 +12,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
+use_flipped = true;
 opts.gpu_id = 0;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
@@ -29,7 +30,7 @@ update_roi_name             = 'M27_nms0.55';      % name in the imdb folder afte
 skip_rpn_test               = false;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
-cache_base_FCN              = 'F08_s31';         
+cache_base_FCN              = 'F08_s31';
 share_data_FCN              = '';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.5;
@@ -47,7 +48,6 @@ model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
-use_flipped                 = true;
 
 model.stage1_rpn.nms.note = '0.55';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.55;
@@ -163,7 +163,7 @@ dataset.roidb_train = cellfun(@(x,y) RPN_TEST_ilsvrc_hyli(...
 
 %% fast rcnn train
 cprintf('blue', '\nStage two Fast-RCNN cascade TRAINING...\n');
-model_stage.output_model_file = fast_rcnn_train(...
+model.stage1_fast_rcnn.output_model_file = fast_rcnn_train(...
     conf_fast_rcnn, ...
     dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
     'do_val',               opts.do_val, ...
@@ -177,4 +177,12 @@ model_stage.output_model_file = fast_rcnn_train(...
     'snapshot_interval',    20000, ...
     'binary',               binary_train ...
     );
+
+cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
+fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...
+    'net_def_file',         model.stage1_fast_rcnn.test_net_def_file, ...
+    'net_file',             model.stage1_fast_rcnn.output_model_file, ...
+    'cache_name',           model.stage1_fast_rcnn.cache_name, ...
+    'ignore_cache',         false);
+
 exit;
