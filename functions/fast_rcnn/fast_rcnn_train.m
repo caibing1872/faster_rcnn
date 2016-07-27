@@ -29,6 +29,7 @@ ip.addParameter('binary',               true,           @islogical);
 ip.parse(conf, imdb_train, roidb_train, train_key, varargin{:});
 opts = ip.Results;
 
+conf.binary = opts.binary;
 debug = opts.debug;
 %% try to find trained model
 %imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
@@ -51,8 +52,6 @@ diary(log_file);
 
 % init caffe solver
 caffe_solver = caffe.Solver(opts.solver_def_file);
-caffe_solver.net.copy_from(opts.net_file);
-
 % set random seed
 prev_rng = seed_rand(conf.rng_seed);
 caffe.set_random_seed(conf.rng_seed);
@@ -115,7 +114,19 @@ end
 num_classes = size(image_roidb_train(1).overlap, 2);
 fcn_get_minibatch = @fast_rcnn_get_minibatch;
 if opts.binary, num_classes = 1; fcn_get_minibatch = @fast_rcnn_get_minibatch_binary; end
-check_gpu_memory(conf, caffe_solver, num_classes, opts.do_val);
+
+% resume mechanism
+if isempty(opts.solverstate)
+    caffe_solver.net.copy_from(opts.net_file);
+    % try to train/val with images which have maximum size potentially,
+    % to validate whether the gpu memory is enough
+    check_gpu_memory(conf, caffe_solver, num_classes, opts.do_val);
+else
+    % loading solverstate, resume
+    caffe_solver.restore(fullfile(cache_dir, ...
+        sprintf('%s.solverstate', opts.solverstate)));
+    fprintf('\nRestoring from iter %d...\n', caffe_solver.iter()-1);
+end
 
 %% training
 shuffled_inds = [];
@@ -157,12 +168,11 @@ while (iter_ < max_iter)
             for i = 1:length(shuffled_inds_val)
                 sub_db_inds = shuffled_inds_val{i};
                 [im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_weights_blob] = ...
-                    fast_rcnn_get_minibatch(conf, image_roidb_val(sub_db_inds));
-                
-                % Reshape net's input blobs
+                    fcn_get_minibatch(conf, image_roidb_val(sub_db_inds));
                 net_inputs = {im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_weights_blob};
-                caffe_solver.net.reshape_as_input(net_inputs);
                 
+                % Reshape net's input blobs       
+                caffe_solver.net.reshape_as_input(net_inputs);             
                 caffe_solver.net.forward(net_inputs);
                 
                 rst = caffe_solver.net.get_output();
