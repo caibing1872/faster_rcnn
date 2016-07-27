@@ -12,12 +12,11 @@ ip = inputParser;
 ip.addRequired('conf',                              @isstruct);
 ip.addRequired('imdb',                              @isstruct);
 ip.addRequired('roidb',                             @isstruct);
-ip.addParamValue('net_def_file',    '', 			@isstr);
-ip.addParamValue('net_file',        '', 			@isstr);
-ip.addParamValue('cache_name',      '', 			@isstr);
-ip.addParamValue('suffix',          '',             @isstr);
-ip.addParamValue('ignore_cache',    false,          @islogical);
-
+ip.addParameter('net_def_file',    '', 			@isstr);
+ip.addParameter('net_file',        '', 			@isstr);
+ip.addParameter('cache_name',      '', 			@isstr);
+ip.addParameter('suffix',          '',             @isstr);
+ip.addParameter('ignore_cache',    false,          @islogical);
 ip.parse(conf, imdb, roidb, varargin{:});
 opts = ip.Results;
 
@@ -55,14 +54,7 @@ catch
     % set random seed
     prev_rng = seed_rand(conf.rng_seed);
     caffe.set_random_seed(conf.rng_seed);
-    
-    %         % set gpu/cpu
-    %         if conf.use_gpu
-    %             caffe.set_mode_gpu();
-    %         else
-    %             caffe.set_mode_cpu();
-    %         end
-    
+       
     % determine the maximum number of rois in testing
     max_rois_num_in_gpu = check_gpu_memory(conf, caffe_net);
     
