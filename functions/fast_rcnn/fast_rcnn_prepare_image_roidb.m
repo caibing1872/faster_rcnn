@@ -26,6 +26,10 @@ roidbs = roidbs(:);
 
 %% step 1
 fprintf(' || Fast RCNN: begin to merge im_roidb from many dbs (taking quite a while on fucking ilsvrc)...\n');
+% debug 
+% db_length = 1000;
+% db_length = length(x.image_ids);
+
 image_roidb = ...
     cellfun(@(x, y) ... // @(imdbs, roidbs)
     arrayfun(@(z) ... //@([1:length(x.image_ids)])
@@ -40,6 +44,7 @@ fprintf(' || done! (%d images!)\n', num_images);
 
 %% step 2: enhance roidb to contain bounding-box regression targets
 fprintf(' || Fast RCNN: begin to append bbox regression targets...\n');
+if conf.binary, cprintf('blue', ' || note: binary mode\n'); end
 [image_roidb, bbox_means, bbox_stds] = ...
     append_bbox_regression_targets(conf, image_roidb, bbox_means, bbox_stds);
 
@@ -48,12 +53,15 @@ end
 
 function [image_roidb, means, stds] = append_bbox_regression_targets(conf, image_roidb, means, stds)
 % means and stds -- (k+1) * 4, include background class
-
 num_images = length(image_roidb);
+
 % Infer number of classes from the number of columns in gt_overlaps
 num_classes = size(image_roidb(1).overlap, 2);
+if conf.binary, num_classes = 1; end
+
 valid_imgs = true(num_images, 1);
-parfor i = 1:num_images
+% parfor is ok below
+for i = 1:num_images
     rois = image_roidb(i).boxes;
     [image_roidb(i).bbox_targets, valid_imgs(i)] = ...
         compute_targets(conf, rois, image_roidb(i).overlap);
@@ -64,6 +72,7 @@ if ~all(valid_imgs)
     fprintf('Warning: fast_rcnn_prepare_image_roidb: filter out %d images, which contains zero valid samples\n', sum(~valid_imgs));
 end
 
+
 if ~(exist('means', 'var') && ~isempty(means) && exist('stds', 'var') && ~isempty(stds))
     % Compute values needed for means and stds
     % var(x) = E(x^2) - E(x)^2
@@ -72,6 +81,8 @@ if ~(exist('means', 'var') && ~isempty(means) && exist('stds', 'var') && ~isempt
     squared_sums = zeros(num_classes, 4);
     for i = 1:num_images
         targets = image_roidb(i).bbox_targets;
+        if conf.binary, targets((targets(:, 1)>0), 1) = 1; end % binarize the pos label to 1
+        
         for cls = 1:num_classes
             cls_inds = find(targets(:, 1) == cls);
             if ~isempty(cls_inds)
@@ -93,6 +104,8 @@ end
 % Normalize targets
 for i = 1:num_images
     targets = image_roidb(i).bbox_targets;
+    if conf.binary, targets((targets(:, 1)>0), 1) = 1; end % binarize the pos label to 1
+    
     for cls = 1:num_classes
         cls_inds = find(targets(:, 1) == cls);
         if ~isempty(cls_inds)
