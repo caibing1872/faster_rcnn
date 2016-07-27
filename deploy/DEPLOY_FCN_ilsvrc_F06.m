@@ -12,7 +12,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
-opts.gpu_id = 0;
+opts.gpu_id = 2;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
@@ -24,14 +24,14 @@ model = Model.VGG16_for_Faster_RCNN(...
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 
 % --------------------------- FCN ----------------------------
-update_roi                  = true;     % if false, won't update roidb
-update_roi_name             = 'M27_nms0.55';      % name in the imdb folder after adding NMS additional boxes
-skip_rpn_test               = false;     % won't do test and compute recall
+update_roi                  = false;     % if false, won't update roidb
+update_roi_name             = '1';      % name in the imdb folder after adding NMS additional boxes
+skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
-cache_base_FCN              = 'F08_s31';         
-share_data_FCN              = '';
-fcn_fg_thresh               = 0.5;
+cache_base_FCN              = 'F06_ls139';         
+share_data_FCN              = 'F01_ls149';
+fcn_fg_thresh               = 0.7;
 fcn_bg_thresh_hi            = 0.5;
 fcn_bg_thresh_lo            = 0.1;
 fcn_scales                  = [600];
@@ -39,7 +39,7 @@ fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
 % --------------------------- RPN ----------------------------
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
-cache_base_RPN = 'M27_s31';
+cache_base_RPN = 'M02_s31';
 % share_data_RPN = 'M04_ls149';
 share_data_RPN = '';
 
@@ -47,10 +47,10 @@ model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
 detect_exist_config_file    = true;
 detect_exist_train_file     = true;
-use_flipped                 = true;
+use_flipped                 = false;
 
-model.stage1_rpn.nms.note = '0.55';   % must be a string
-model.stage1_rpn.nms.nms_overlap_thres = 0.55;
+model.stage1_rpn.nms.note = '0.7';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = 0.7;
 %model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
 % default
 model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
@@ -65,8 +65,8 @@ model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,
 % model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
 % model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  500,  500,  500,  500,  300];
 
-fg_thresh = 0.5;        % 0.7 default
-bg_thresh_hi = 0.5;     % 0.3 default
+fg_thresh = 0.7;
+bg_thresh_hi = 0.3;
 scales = [600];
 % ==========================================================
 % ==========================================================
@@ -118,21 +118,21 @@ dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
 dataset = Dataset.ilsvrc14(dataset, opts.train_key, use_flipped, root_path);
 
 %%  stage one proposal
-cprintf('blue', '\nStage one proposal TRAINING...\n');
-% train
-model.stage1_rpn.output_model_file = proposal_train(...
-    conf_proposal, ...
-    dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
-    'detect_exist_train_file',  detect_exist_train_file, ...
-    'do_val',               opts.do_val, ...
-    'imdb_val',             dataset.imdb_test, ...
-    'roidb_val',            dataset.roidb_test, ...
-    'solver_def_file',      model.stage1_rpn.solver_def_file, ...
-    'net_file',             net_file, ...
-    'cache_name',           model.stage1_rpn.cache_name, ...
-    'snapshot_interval',    20000, ...
-    'share_data_name',      share_data_RPN ...
-    );
+% cprintf('blue', '\nStage one proposal TRAINING...\n');
+% % train
+% model.stage1_rpn.output_model_file = proposal_train(...
+%     conf_proposal, ...
+%     dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
+%     'detect_exist_train_file',  detect_exist_train_file, ...
+%     'do_val',               opts.do_val, ...
+%     'imdb_val',             dataset.imdb_test, ...
+%     'roidb_val',            dataset.roidb_test, ...
+%     'solver_def_file',      model.stage1_rpn.solver_def_file, ...
+%     'net_file',             net_file, ...
+%     'cache_name',           model.stage1_rpn.cache_name, ...
+%     'snapshot_interval',    20000, ...
+%     'share_data_name',      share_data_RPN ...
+%     );
 
 % test: compute recall and update roidb on TEST
 cprintf('blue', '\nStage one proposal TEST on val data ...\n');
