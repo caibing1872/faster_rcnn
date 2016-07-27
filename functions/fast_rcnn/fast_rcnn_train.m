@@ -136,6 +136,7 @@ val_results = [];
 iter_ = caffe_solver.iter();
 max_iter = caffe_solver.max_iter();
 th = tic;
+fprintf('\nmax iter: %d\n', max_iter);
 
 while (iter_ < max_iter)
     
