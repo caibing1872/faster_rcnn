@@ -1,8 +1,10 @@
-function dataset = ilsvrc14(dataset, usage, use_flip, root_path)
+function dataset = ilsvrc14(dataset, usage, use_flip, root_path, roidb_name_suffix)
 % refactored by hyli
 %
 % set opts.imdb_train opts.roidb_train 
 % or set opts.imdb_test opts.roidb_test
+
+if nargin <= 4, roidb_name_suffix = ''; end
 
 switch usage
     
@@ -34,7 +36,8 @@ switch usage
     case {'test'}
         % IN SERVICE
         dataset.imdb_test     = imdb_from_ilsvrc14(root_path, 'val2', false);
-        dataset.roidb_test    = dataset.imdb_test.roidb_func(dataset.imdb_test);
+        dataset.roidb_test    = dataset.imdb_test.roidb_func(dataset.imdb_test, ...
+            'roidb_name_suffix', roidb_name_suffix);
         
     otherwise
         error('usage = ''train14'' or ''test''');

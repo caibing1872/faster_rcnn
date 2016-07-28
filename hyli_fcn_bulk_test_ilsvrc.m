@@ -13,6 +13,7 @@ run('./startup');
 cache_base_rpn = 'M02_s31';
 cache_base_fcn = 'FCN_try_local_nms0_55_top2000';
 train_key = 'train14';
+roidb_name = '1';
 gpu_id = 0;
 binary_train = true;
 
@@ -39,7 +40,7 @@ caffe.set_mode_gpu();
 % dataset
 dataset = [];
 root_path = './datasets/ilsvrc14_det';
-dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
+dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path, roidb_name);
 
 %% compute recall and update roidb on TEST
 trained_model_dir_prefix = [pwd '/output/fast_rcnn_cachedir/' cache_base_fcn ...
