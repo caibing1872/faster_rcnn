@@ -1,18 +1,15 @@
-% RPN training and testing on ilsvrc
+% RPN and FCNtraining and testing on ilsvrc
 %
-% refactor by hyli on July 13 2016
-%
+% refactor by hyli on July 28, 2016
 % ---------------------------------------------------------
 
-% clc;
-clear;
-run('./startup');
+clear; run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
-use_flipped = true;
+use_flipped = false;
 opts.gpu_id = 0;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
@@ -25,12 +22,17 @@ model = Model.VGG16_for_Faster_RCNN(...
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 
 % --------------------------- FCN ----------------------------
-update_roi                  = true;     % if false, won't update roidb
-update_roi_name             = 'M27_nms0.55';      % name in the imdb folder after adding NMS additional boxes
-skip_rpn_test               = false;     % won't do test and compute recall
+fast_rcnn_net_file = [{'train14'}, {'final'}];
+% if you want to generate new train_val_data, 'update_roi' must be set
+% true; otherwise you can set it false to directly use existing data.
+% update: you MUST update roi when test (TODO: explain more here).
+update_roi                  = true;     
+update_roi_name             = '1';
+%update_roi_name             = 'M27_nms0.55';      % name in the imdb folder after adding NMS additional boxes
+skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
-cache_base_FCN              = 'F08_s31';
+cache_base_FCN              = 'FCN_try_local';
 share_data_FCN              = '';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.5;
@@ -38,9 +40,17 @@ fcn_bg_thresh_lo            = 0.1;
 fcn_scales                  = [600];
 fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
+
+test_max_per_image          = 2000; %1000; %100;
+% if avg == max_per_im, there's no reduce in the number of boxes.
+test_avg_per_image          = 2000; %1000; %500; %40;
+
+fast_rcnn_after_nms_topN    = 2000;
+fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5];
 % --------------------------- RPN ----------------------------
+% NOTE: this variable stores BOTH RPN and FCN in the 'config_temp' folder
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
-cache_base_RPN = 'M27_s31';
+cache_base_RPN = 'M02_s31';
 % share_data_RPN = 'M04_ls149';
 share_data_RPN = '';
 
@@ -51,7 +61,8 @@ detect_exist_train_file     = true;
 
 model.stage1_rpn.nms.note = '0.55';   % must be a string
 model.stage1_rpn.nms.nms_overlap_thres = 0.55;
-%model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
+
+% model.stage1_rpn.nms.note = 'multiNMS_1a';   % must be a string
 % default
 model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
 model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,   10];
@@ -87,6 +98,7 @@ caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 % config, must be input after setting caffe
 % in the 'proposal_config.m' file
+% TODO change the saving mechanism here
 [conf_proposal, conf_fast_rcnn] = Faster_RCNN_Train.set_config( ...
     cache_base_RPN, model, detect_exist_config_file );
 conf_proposal.cache_base_proposal = cache_base_RPN;
@@ -106,6 +118,7 @@ conf_fast_rcnn.fcn_bg_thresh_lo     = fcn_bg_thresh_lo;
 conf_fast_rcnn.fcn_scales           = fcn_scales;
 conf_fast_rcnn.fcn_fg_fraction      = fcn_fg_fraction;
 conf_fast_rcnn.fcn_max_size         = fcn_max_size;
+conf_fast_rcnn.update_roi_name      = update_roi_name;
 
 % train/test data
 % init:
@@ -118,6 +131,7 @@ dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
 dataset = Dataset.ilsvrc14(dataset, opts.train_key, use_flipped, root_path);
 
 %%  stage one proposal
+% temporarily comment the following
 cprintf('blue', '\nStage one proposal TRAINING...\n');
 % train
 model.stage1_rpn.output_model_file = proposal_train(...
@@ -174,15 +188,21 @@ model.stage1_fast_rcnn.output_model_file = fast_rcnn_train(...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
     'val_iters',            500, ...
     'val_interval',         20000, ...
-    'snapshot_interval',    20000, ...
+    'snapshot_interval',    100, ...
     'binary',               binary_train ...
     );
 
+% 'net_file', model.stage1_fast_rcnn.output_model_file, ...
 cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
 fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...
     'net_def_file',         model.stage1_fast_rcnn.test_net_def_file, ...
-    'net_file',             model.stage1_fast_rcnn.output_model_file, ...
+    'net_file',             fast_rcnn_net_file, ...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
-    'ignore_cache',         false);
+    'binary',               binary_train, ...
+    'max_per_image',        test_max_per_image, ...
+    'avg_per_image',        test_avg_per_image, ...
+    'nms_overlap_thres',    fast_nms_overlap_thres, ...
+    'after_nms_topN',       fast_rcnn_after_nms_topN ...
+    );
 
 exit;

@@ -1,13 +1,11 @@
 function res = imdb_eval_ilsvrc14(ignore, all_boxes, imdb, suffix)
-% res = imdb_eval_ilsvrc13(ignore, all_boxes, imdb, suffix)
-
 % AUTORIGHTS
 % ---------------------------------------------------------
 % Copyright (c) 2014, Ross Girshick
-% 
-% This file is part of the R-CNN code and is available 
-% under the terms of the Simplified BSD License provided in 
-% LICENSE. Please retain this notice and LICENSE if you use 
+%
+% This file is part of the R-CNN code and is available
+% under the terms of the Simplified BSD License provided in
+% LICENSE. Please retain this notice and LICENSE if you use
 % this file (or any portion of it) in your project.
 % ---------------------------------------------------------
 
@@ -16,64 +14,64 @@ rm_res = ~true;
 
 % save results
 if ~exist('suffix', 'var') || isempty(suffix) || strcmp(suffix, '')
-  suffix = '';
+    suffix = '';
 else
-  if suffix(1) ~= '_'
-    suffix = ['_' suffix];
-  end
+    if suffix(1) ~= '_'
+        suffix = ['_' suffix];
+    end
 end
 
 conf = rcnn_config('sub_dir', imdb.name);
 
 top_k = 30000;
 for cls = 1:length(all_boxes)
-  tic_toc_print('Applying NMS for class %d/%d\n', ...
-      cls, length(all_boxes));
-  
-  % Apply NMS
-  boxes = all_boxes{cls};
-  for image_index = 1:length(boxes);
-    bbox = boxes{image_index};
-    keep = nms(bbox, 0.3);
-    boxes{image_index} = bbox(keep,:);
-  end
-
-  % Keep top K
-  X = cat(1, boxes{:});
-  scores = sort(X(:,end), 'descend');
-  thresh = scores(min(length(scores), top_k));
-  for image_index = 1:length(boxes);
-    bbox = boxes{image_index};
-%     keep = find(bbox(:,end) >= thresh);
-%     boxes{image_index} = bbox(keep,:);
-  if ~isempty(bbox)
-      keep = find(bbox(:,end) >= thresh);
-      boxes{image_index} = bbox(keep,:);
-  else
-      keep = [];
-      boxes{image_index} = [];
-  end
-  end
-  all_boxes{cls} = boxes;
+    tic_toc_print('Applying NMS for class %d/%d\n', ...
+        cls, length(all_boxes));
+    
+    % Apply NMS
+    boxes = all_boxes{cls};
+    for image_index = 1:length(boxes);
+        bbox = boxes{image_index};
+        keep = nms(bbox, 0.3);
+        boxes{image_index} = bbox(keep,:);
+    end
+    
+    % Keep top K
+    X = cat(1, boxes{:});
+    scores = sort(X(:,end), 'descend');
+    thresh = scores(min(length(scores), top_k));
+    for image_index = 1:length(boxes);
+        bbox = boxes{image_index};
+        %     keep = find(bbox(:,end) >= thresh);
+        %     boxes{image_index} = bbox(keep,:);
+        if ~isempty(bbox)
+            keep = find(bbox(:,end) >= thresh);
+            boxes{image_index} = bbox(keep,:);
+        else
+            keep = [];
+            boxes{image_index} = [];
+        end
+    end
+    all_boxes{cls} = boxes;
 end
 
-addpath(fullfile(imdb.details.devkit_path, 'evaluation')); 
+addpath(fullfile(imdb.details.devkit_path, 'evaluation'));
 
 pred_file = tempname();
 
 % write out detections in ILSVRC format
 fid = fopen(pred_file, 'w');
 for cls = 1:length(all_boxes)
-  tic_toc_print('writing out detections for class %d/%d\n', ...
-      cls, length(all_boxes));
-  boxes = all_boxes{cls};
-  for image_index = 1:length(boxes);
-    bbox = boxes{image_index};
-    for j = 1:size(bbox,1)
-      fprintf(fid, '%d %d %.3f %d %d %d %d\n', ...
-          image_index, cls, bbox(j,end), round(bbox(j,1:4)));
+    tic_toc_print('writing out detections for class %d/%d\n', ...
+        cls, length(all_boxes));
+    boxes = all_boxes{cls};
+    for image_index = 1:length(boxes);
+        bbox = boxes{image_index};
+        for j = 1:size(bbox,1)
+            fprintf(fid, '%d %d %.3f %d %d %d %d\n', ...
+                image_index, cls, bbox(j,end), round(bbox(j,1:4)));
+        end
     end
-  end
 end
 fclose(fid);
 
@@ -96,7 +94,7 @@ load(meta_file);
 fprintf('-------------\n');
 fprintf('Category\tAP\n');
 for i = ignore
-% for i = 1:200
+    % for i = 1:200
     s = synsets(i).name;
     if length(s) < 8
         fprintf('%s\t\t%0.3f\n',s,ap(i));
@@ -117,7 +115,7 @@ save([conf.cache_dir 'eval_detection_' imdb.name suffix], ...
     'res', 'recall', 'precision', 'ap');
 
 if rm_res
-  delete(pred_file);
+    delete(pred_file);
 end
 
-rmpath(fullfile(imdb.details.devkit_path, 'evaluation')); 
+rmpath(fullfile(imdb.details.devkit_path, 'evaluation'));

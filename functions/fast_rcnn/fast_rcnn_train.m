@@ -34,8 +34,9 @@ debug = opts.debug;
 %% try to find trained model
 %imdbs_name = cell2mat(cellfun(@(x) x.name, imdb_train, 'UniformOutput', false));
 cache_dir = fullfile(pwd, 'output', 'fast_rcnn_cachedir', opts.cache_name, opts.train_key);
-save_model_path = fullfile(cache_dir, 'final');
+save_model_path = fullfile(cache_dir, 'final.caffemodel');
 if exist(save_model_path, 'file')
+    fprintf('find the final model, skip training ...\n');
     return;
 end
 
