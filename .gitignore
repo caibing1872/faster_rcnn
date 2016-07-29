@@ -37,11 +37,13 @@ external/caffe/python/caffe/proto/
 external/caffe/cmake_build
 external/caffe/.cmake_build
 
+*.mex*
 output/
 imdb/cache
 *.caffemodel
 *.mat
 *.m~
+*.txt~
 *.prototxt~
 local/
 

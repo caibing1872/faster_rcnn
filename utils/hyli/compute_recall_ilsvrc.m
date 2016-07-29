@@ -1,9 +1,8 @@
-function recall_per_cls = compute_recall_ilsvrc(prop_mat_file, top_k, imdb)
+function recall_per_cls = compute_recall_ilsvrc(prop_path, top_k, imdb)
 % if top_k is set negative, then all boxes will be evaluated
 
 dataset_root = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
 addpath([dataset_root '/evaluation']);
-prop_path = prop_mat_file;
 ov = 0.5;
 
 % exclude_hard = false;       % makes no sense on val2
@@ -21,7 +20,7 @@ ov = 0.5;
 
 %% compute recall
 proposals = load(prop_path);
-proposals = proposals.aboxes;
+try proposals = proposals.aboxes; catch, proposals = proposals.boxes; end
 
 switch imdb.name
     case 'ilsvrc14_val2'

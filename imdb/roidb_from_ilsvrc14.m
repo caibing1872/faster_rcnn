@@ -14,19 +14,38 @@ ip.addParameter('with_edge_box',                   false,  @islogical);
 ip.addParameter('with_self_proposal',              false,  @islogical);
 ip.addParameter('rootDir',                         '.',    @ischar);
 ip.addParameter('extension',                       '',     @ischar);
+ip.addParameter('roidb_name_suffix',               '',     @isstr);
 ip.parse(imdb, varargin{:});
 opts = ip.Results;
 
 if ~exist('./imdb/cache/ilsvrc', 'dir')
     mkdir('./imdb/cache/ilsvrc');
 end
+
 try
     flip = imdb.flip;
 catch
     flip = false;
 end
+
+if ~isempty(opts.roidb_name_suffix)
+    assert(strcmp(imdb.name, 'ilsvrc14_val2'));
+    assert(flip == false); 
+end
+
 if flip == false
     cache_file = ['./imdb/cache/ilsvrc/roidb_' imdb.name '_unflip'];
+    if ~isempty(opts.roidb_name_suffix)
+        cache_file = [cache_file '_' opts.roidb_name_suffix];
+        try 
+            load(cache_file);
+            roidb.rois = rois;
+            roidb.name = imdb.name;
+        catch
+            error('fuck you!!!');
+        end
+        return;
+    end
 else
     cache_file = ['./imdb/cache/ilsvrc/roidb_' imdb.name '_flip'];
 end

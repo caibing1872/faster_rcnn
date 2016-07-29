@@ -12,7 +12,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
-opts.gpu_id = 0;
+opts.gpu_id = 5;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
@@ -26,17 +26,17 @@ model = Model.VGG16_for_Faster_RCNN(...
 % --------------------------- FCN ----------------------------
 update_roi                  = true;     % if false, won't update roidb
 update_roi_name             = 'M27_nms0.55';      % name in the imdb folder after adding NMS additional boxes
-skip_rpn_test               = false;     % won't do test and compute recall
+skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
-cache_base_FCN              = 'F08_s31';         
-share_data_FCN              = '';
+cache_base_FCN              = 'F09_s31';         
+share_data_FCN              = 'F08_s31';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.5;
 fcn_bg_thresh_lo            = 0.1;
-fcn_scales                  = [600];
+fcn_scales                  = [800];
 fcn_fg_fraction             = 0.25;
-fcn_max_size                = 1000;
+fcn_max_size                = 1500;
 % --------------------------- RPN ----------------------------
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
 cache_base_RPN = 'M27_s31';
@@ -161,6 +161,7 @@ dataset.roidb_train = cellfun(@(x,y) RPN_TEST_ilsvrc_hyli(...
     'gpu_id',               opts.gpu_id ...
     ), dataset.imdb_train, dataset.roidb_train, 'UniformOutput', false);
 
+
 %% fast rcnn train
 cprintf('blue', '\nStage two Fast-RCNN cascade TRAINING...\n');
 model_stage.output_model_file = fast_rcnn_train(...
@@ -174,7 +175,7 @@ model_stage.output_model_file = fast_rcnn_train(...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
     'val_iters',            500, ...
     'val_interval',         20000, ...
-    'snapshot_interval',    20000, ...
+    'snapshot_interval',    10000, ...
     'binary',               binary_train ...
     );
 exit;

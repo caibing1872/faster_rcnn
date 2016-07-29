@@ -1,4 +1,4 @@
-function [im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_blob] = fast_rcnn_get_minibatch(conf, image_roidb)
+function [im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_blob] = fast_rcnn_get_minibatch_binary(conf, image_roidb)
 % [im_blob, rois_blob, labels_blob, bbox_targets_blob, bbox_loss_blob] ...
 %    = fast_rcnn_get_minibatch(conf, image_roidb)
 % --------------------------------------------------------
