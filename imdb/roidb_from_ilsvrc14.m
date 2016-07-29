@@ -36,8 +36,9 @@ end
 if flip == false
     cache_file = ['./imdb/cache/ilsvrc/roidb_' imdb.name '_unflip'];
     if ~isempty(opts.roidb_name_suffix)
-        cache_file = [cache_file '_' opts.roidb_name_suffix];
-        try 
+        cache_file = [cache_file '_' opts.roidb_name_suffix '.mat'];
+        try
+            %disp(cache_file); 
             load(cache_file);
             roidb.rois = rois;
             roidb.name = imdb.name;
