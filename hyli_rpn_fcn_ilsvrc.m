@@ -2,7 +2,7 @@
 %
 % refactor by hyli on July 28, 2016
 % ---------------------------------------------------------
-
+caffe.reset_all();
 clear; run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
@@ -40,9 +40,10 @@ fcn_scales                  = [600];
 fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
 
-test_max_per_image          = 2000; %1000; %100;
+% if adding more proposals, you need to increase the number here
+test_max_per_image          = 5000; %1000; %100;
 % if avg == max_per_im, there's no reduce in the number of boxes.
-test_avg_per_image          = 2000; %1000; %500; %40;
+test_avg_per_image          = 5000; %1000; %500; %40;
 
 fast_rcnn_after_nms_topN    = 2000;
 fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5];
@@ -85,7 +86,7 @@ else
     net_file = model.stage1_rpn.init_net_file;
 end
 
-caffe.reset_all();
+
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 % config, must be input after setting caffe
@@ -187,21 +188,22 @@ model.stage1_fast_rcnn.output_model_file = fast_rcnn_train(...
 % add more proposal here
 name = 'rpn_plus_attend';
 FLIP = 'unflip';
-rpn_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
-    ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', update_roi_name)]);
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
-copyfile(rpn_roidb_file, new_roidb_file);
 
-% load attention boxes
-ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.50.mat');
-aboxes = ld.aboxes;
-roidb_regions = [];
-roidb_regions.boxes = aboxes;
-roidb_regions.images = dataset.imdb_test.image_ids;
-% update roidb in 'imdb' folder
-roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
-    roidb_regions, 'keep_raw_proposal', true, 'mat_file', new_roidb_file);
+if ~exist(new_roidb_file, 'file')
+    % load attention boxes
+    ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.50.mat');
+    aboxes = ld.aboxes;
+    roidb_regions = [];
+    roidb_regions.boxes = aboxes;
+    roidb_regions.images = dataset.imdb_test.image_ids;
+    % update roidb in 'imdb' folder
+    roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
+        roidb_regions, 'keep_raw_proposal', true, 'mat_file', new_roidb_file);
+end
+ld = load(new_roidb_file);
+dataset.roidb_test.rois = ld.rois;
 
 % 'net_file', model.stage1_fast_rcnn.output_model_file, ...
 cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
