@@ -16,6 +16,7 @@ datasets/
 external/caffe_try
 external/caffe_temp
 external/CaffeMex
+box_proposals/
 
 external/caffe/data/*
 external/caffe/models/*
