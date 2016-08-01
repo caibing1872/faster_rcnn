@@ -164,6 +164,7 @@ catch
     end
     
     % step 2
+    % 'top_scores' is fucking unused
     for i = 1:num_classes
         top_scores{i} = sort(top_scores{i}, 'descend');
         if (length(top_scores{i}) > max_per_set)

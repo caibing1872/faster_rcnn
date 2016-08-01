@@ -1,4 +1,4 @@
-function boxes = selective_search_boxes(im, fast_mode, im_width)
+function [boxes, score] = selective_search_boxes(im, fast_mode, im_width)
 
 % Based on the demo.m file included in the Selective Search
 % IJCV code.
@@ -61,12 +61,17 @@ priority = cat(1, priorityT{:}); % Concatenate priorities
 
 % Do pseudo random sorting as in paper
 priority = priority .* rand(size(priority));
-[priority sortIds] = sort(priority, 'ascend');
+score_norm = (priority - min(priority(:))) ./ ...
+    (max(priority(:))-min(priority(:)));
+[~, sortIds] = sort(score_norm, 'ascend');
 boxes = boxes(sortIds,:);
+score = 1 - score_norm;     % higher is better
 
-boxes = FilterBoxesWidth(boxes, minBoxWidth);
-boxes = BoxRemoveDuplicates(boxes);
-
+[boxes, isgood] = FilterBoxesWidth(boxes, minBoxWidth);
+score = score(isgood);
+[boxes, uniqueInd] = BoxRemoveDuplicates(boxes);
+score = score(uniqueInd);
+assert(size(boxes,1)==length(score));
 if scale ~= 1
   boxes = (boxes - 1) * scale + 1;
 end

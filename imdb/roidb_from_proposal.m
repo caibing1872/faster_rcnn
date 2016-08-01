@@ -59,7 +59,7 @@ for i = 1 : ceil(length(rois)/chunk)
         [~, image_name2] = fileparts(images_{abs_ind});
         assert(strcmp(image_name1, image_name2));
         
-        boxes = boxes_{abs_ind}(:, 1:4)      
+        boxes = boxes_{abs_ind}(:, 1:4);     
         gt_boxes = rois(abs_ind).boxes(rois(abs_ind).gt, :);
         gt_classes = rois(abs_ind).class(rois(abs_ind).gt, :);
         all_boxes = cat(1, rois(abs_ind).boxes, boxes);
