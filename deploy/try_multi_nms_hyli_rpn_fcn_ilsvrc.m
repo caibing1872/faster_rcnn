@@ -2,7 +2,7 @@
 % but still, the gpu is occupied for initiating Caffe.
 % refactor by hyli on Aug 2nd, 2016
 % ---------------------------------------------------------
-%caffe.reset_all();
+caffe.reset_all();
 clear; run('./startup');
 %% init
 fprintf('\nInitialize model, dataset, and configuration...\n');
