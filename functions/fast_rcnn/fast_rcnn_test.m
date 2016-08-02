@@ -90,6 +90,7 @@ save_after_nms = @(x, y, z) fullfile(cache_dir_sub, ...
     imdb.name opts.suffix sprintf('_nms_%.2f_topN_%d.mat', y, z)]);
 %% testing
 show_num = 3000;
+% skip_fast_rcnn_test 
 try
     aboxes = cell(num_classes, 1);
     if opts.ignore_cache

@@ -10,7 +10,7 @@ opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
 use_flipped = false;
-opts.gpu_id = 1;
+opts.gpu_id = 0;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
@@ -39,15 +39,12 @@ fcn_bg_thresh_lo            = 0.1;
 fcn_scales                  = [600];
 fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
-
-% if adding more proposals, you need to increase the number here
-test_max_per_image          = 5000; %1000; %100;
-% if avg == max_per_im, there's no reduce in the number of boxes.
-test_avg_per_image          = 5000; %1000; %500; %40;
+%
+% skip_fast_rcnn_test
 
 fast_rcnn_after_nms_topN    = 2000;
-fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5];
-
+%fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5];
+fast_nms_overlap_thres = [0.5 : -.05 : 0.3];
 % --------------------------- RPN ----------------------------
 % NOTE: this variable stores BOTH RPN and FCN in the 'config_temp' folder
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
@@ -186,15 +183,25 @@ model.stage1_fast_rcnn.output_model_file = fast_rcnn_train(...
     );
 
 % add more proposal here
-name = 'rpn_plus_attend';
+% if adding more proposals, you need to increase the number here
+test_max_per_image          = 10001; %10000; %100;
+% if avg == max_per_im, there's no reduce in the number of boxes.
+test_avg_per_image          = 10001; %10000; %500; %40;
+
+%name = 'rpn_plus_attend';
+%name = 'rpn_plus_attend_all';
+name = 'rpn_plus_attend_nms0_65';
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
 
 if ~exist(new_roidb_file, 'file')
     % load attention boxes
-    ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.50.mat');
-    aboxes = ld.aboxes;
+    %ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.50.mat');
+    %ld = load('/home/hongyang/project/AttractioNet/bbox_props_cands_Aug_1_default.mat');
+    ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.65.mat');
+    
+    try aboxes = ld.aboxes; catch, aboxes = ld.boxes_uncut; end
     roidb_regions = [];
     roidb_regions.boxes = aboxes;
     roidb_regions.images = dataset.imdb_test.image_ids;

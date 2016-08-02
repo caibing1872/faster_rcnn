@@ -108,7 +108,8 @@ for i = 1:length(top_k)
     
     if ~isempty(nms_range)
         
-        ld = load([save_name(1:end-4) '_right_format.mat']);
+        try ld = load([save_name(1:end-4) '_right_format.mat']);
+        catch, ld = load(save_name); end
         aboxes_raw = ld.aboxes;
         assert(size(aboxes_raw{1}, 2)==5);
         for j = 1:length(nms_range)
