@@ -1,5 +1,5 @@
 function set = generate_multi_nms_setting()
-
+% for rpn
 % model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
 % model.stage1_rpn.nms.max_per_image  = [3000, 2000, 1000, 800,  400,  200,  100,  50];
 

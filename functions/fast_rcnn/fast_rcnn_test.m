@@ -21,8 +21,12 @@ ip.addParameter('binary',           true,           @islogical);
 ip.addParameter('max_per_image',    100,            @isscalar);
 ip.addParameter('avg_per_image',    40,             @isscalar);
 ip.addParameter('bulk_prefix',      '',             @isstr);
+ip.addParameter('test_sub_folder_suffix', '',       @isstr);
+% normal nms
 ip.addParameter('nms_overlap_thres',0,              @ismatrix);
 ip.addParameter('after_nms_topN',   2000,           @isscalar);
+% multi-thres nms
+ip.addParameter('nms',              '',             @isstruct);
 ip.parse(conf, imdb, roidb, varargin{:});
 opts = ip.Results;
 per_nms_topN = -1;
@@ -35,7 +39,8 @@ if ~isempty(opts.bulk_prefix)
     cache_dir = fullfile(opts.bulk_prefix, imdb.name);
 end
 mkdir_if_missing(cache_dir);
-cache_dir_sub = fullfile(cache_dir, opts.net_file{2});
+if isempty(opts.test_sub_folder_suffix), cache_dir_sub = fullfile(cache_dir, opts.net_file{2});
+else cache_dir_sub = fullfile(cache_dir, [opts.net_file{2} '_' opts.test_sub_folder_suffix]); end
 mkdir_if_missing(cache_dir_sub);
 
 %%  init log
@@ -56,15 +61,6 @@ if ~isempty(opts.bulk_prefix)
     caffe_net_file_full = fullfile(opts.bulk_prefix, ...
         opts.net_file{1}, sprintf('%s.caffemodel', opts.net_file{2}));
 end
-caffe_net = caffe.Net(opts.net_def_file, 'test');
-caffe_net.copy_from(caffe_net_file_full);
-
-% set random seed
-prev_rng = seed_rand(conf.rng_seed);
-caffe.set_random_seed(conf.rng_seed);
-
-% determine the maximum number of rois in testing
-max_rois_num_in_gpu = check_gpu_memory(conf, caffe_net);
 
 num_images = length(imdb.image_ids);
 num_classes = imdb.num_classes;
@@ -74,23 +70,20 @@ max_per_set = opts.avg_per_image * num_images;
 % heuristic: keep at most 100 detection per class per image prior to NMS
 max_per_image = opts.max_per_image;
 
-% double check first
-[~, scores_check] = fast_rcnn_im_detect(conf, caffe_net, ...
-    imread(imdb.image_at(1)), roidb.rois(1).boxes, max_rois_num_in_gpu);
-assert(size(scores_check, 1) == size(roidb.rois(1).gt,1));
-assert(size(scores_check, 2) == num_classes);
 
+% save the 'binary_xx' raw boxes before nms
 save_file = @(x) fullfile(cache_dir_sub, ...
     [imdb.classes{x} '_boxes_' ...
     imdb.name opts.suffix ...
     sprintf('_max_%d_avg_%d.mat', max_per_image, opts.avg_per_image)]);
 
+% save the boxes after nms
 save_after_nms = @(x, y, z) fullfile(cache_dir_sub, ...
     [imdb.classes{x} '_boxes_' ...
     imdb.name opts.suffix sprintf('_nms_%.2f_topN_%d.mat', y, z)]);
 %% testing
 show_num = 3000;
-% skip_fast_rcnn_test 
+% skip_fast_rcnn_test
 try
     aboxes = cell(num_classes, 1);
     if opts.ignore_cache
@@ -106,6 +99,20 @@ catch
     disp(opts);
     disp('conf:');
     disp(conf);
+    
+    caffe_net = caffe.Net(opts.net_def_file, 'test');
+    caffe_net.copy_from(caffe_net_file_full);
+    % set random seed
+    prev_rng = seed_rand(conf.rng_seed);
+    caffe.set_random_seed(conf.rng_seed);
+    
+    % determine the maximum number of rois in testing
+    max_rois_num_in_gpu = check_gpu_memory(conf, caffe_net);
+    % double check first
+    [~, scores_check] = fast_rcnn_im_detect(conf, caffe_net, ...
+        imread(imdb.image_at(1)), roidb.rois(1).boxes, max_rois_num_in_gpu);
+    assert(size(scores_check, 1) == size(roidb.rois(1).gt,1));
+    assert(size(scores_check, 2) == num_classes);
     
     % detection thresold for each class (this is adaptively set based on the max_per_set constraint)
     thresh = -inf * ones(num_classes, 1);
@@ -218,31 +225,55 @@ if ~opts.binary
 else
     %% NMS step
     raw_aboxes = aboxes{1};
-    best_recall = 0;
-    for i = 1:length(nms_overlap_thres)
-        
-        temp = save_after_nms(1, nms_overlap_thres(i), after_nms_topN);
-        if exist(temp, 'file')
-            disp('nms result exist. compute recall directly ...');
-        else
-            aboxes = boxes_filter_inline(raw_aboxes, ...
-                per_nms_topN, ...               % -1
-                nms_overlap_thres(i), ...       % 0.6, 0.7, ...
-                after_nms_topN, true);
-            save(temp, 'aboxes');
+    
+    if isempty(opts.nms)
+        % normal nms
+        best_recall = 0;
+        for i = 1:length(nms_overlap_thres)
+            
+            temp = save_after_nms(1, nms_overlap_thres(i), after_nms_topN);
+            if exist(temp, 'file')
+                disp('nms result exist. compute recall directly ...');
+            else
+                aboxes = boxes_filter_inline(raw_aboxes, ...
+                    per_nms_topN, ...               % -1
+                    nms_overlap_thres(i), ...       % 0.6, 0.7, ...
+                    after_nms_topN, true);
+                save(temp, 'aboxes');
+            end
+            % compute recall
+            recall_per_cls = compute_recall_ilsvrc(...
+                save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
+            mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
+            
+            cprintf('blue', 'nms (thres: %.2f, topN: %d), mean rec:: %.2f\n\n', ...
+                nms_overlap_thres(i), after_nms_topN, mean_recall);
+            save([temp(1:end-4) sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
+            
+            if mean_recall > best_recall, best_recall = mean_recall; end
         end
+        mAP = best_recall;
+    else
+        clear aboxes;
+        % multi-thres NMS
+        parfor kk = 1:length(raw_aboxes)
+            aboxes{kk} = AttractioNet_postprocess(raw_aboxes{kk}, 'thresholds', -inf, 'use_gpu', true, ...
+                'mult_thr_nms',     true, ...
+                'nms_iou_thrs',     opts.nms.nms_iou_thrs, ...
+                'factor',           opts.nms.factor, ...
+                'scheme',           opts.nms.scheme, ...
+                'max_per_image',    opts.nms.max_per_image);
+        end
+        save([cache_dir_sub '/' opts.nms.note '.mat'], 'aboxes', '-v7.3');
         % compute recall
         recall_per_cls = compute_recall_ilsvrc(...
-            save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
+            [cache_dir_sub '/' opts.nms.note '.mat'], 300, imdb);
         mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
         
-        cprintf('blue', 'nms (thres: %.2f, topN: %d), mean rec:: %.2f\n\n', ...
-            nms_overlap_thres(i), after_nms_topN, mean_recall);
-        save([temp(1:end-4) sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
-        
-        if mean_recall > best_recall, best_recall = mean_recall; end
+        cprintf('blue', 'multi-thres nms note (%s), mean rec:: %.2f\n\n', ...
+            opts.nms.note, mean_recall);
+        save([cache_dir_sub '/' opts.nms.note sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
     end
-    mAP = best_recall;
 end
 diary off;
 end
