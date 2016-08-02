@@ -27,11 +27,13 @@ function [bboxes_out, keep_indices] = ...
 % format as bboxes_in. 
 
 ip = inputParser;
-ip.addParameter('thresholds',           -3, @isnumeric);
-ip.addParameter('max_per_image',       200, @isnumeric);
-ip.addParameter('nms_iou_thrs',        0.3, @isnumeric);
-ip.addParameter('use_gpu',           false, @islogical);
-ip.addParameter('mult_thr_nms',      false, @islogical);
+ip.addParameter('thresholds',           -3,     @isnumeric);
+ip.addParameter('max_per_image',       200,     @isnumeric);
+ip.addParameter('nms_iou_thrs',        0.3,     @isnumeric);
+ip.addParameter('use_gpu',           false,     @islogical);
+ip.addParameter('mult_thr_nms',      false,     @islogical);
+ip.addParameter('factor',            1,         @isnumeric);
+ip.addParameter('scheme',            'minus',   @isstr);
 ip.parse(varargin{:});
 opts = ip.Results;
 
@@ -48,7 +50,10 @@ assert(size(bboxes_in,2)==5)
     
 if opts.mult_thr_nms
     % Apply the multi-threshold non-max-suppression step
-    [bboxes_out, indices] = apply_multi_thr_nms(bboxes_in, thresholds, nms_iou_thrs, max_per_image, use_gpu);
+    [bboxes_out, indices] = apply_multi_thr_nms(...
+        bboxes_in, thresholds, nms_iou_thrs, max_per_image, use_gpu, ...
+        opts.factor, opts.scheme ...
+        );
 else
     % Apply the single-threshold non-max-suppression step
     [bboxes_out, indices] = apply_single_thr_nms(bboxes_in, thresholds, nms_iou_thrs, max_per_image, use_gpu);
@@ -91,7 +96,9 @@ end
 end
 
 function [bboxes_out, indices] = ...
-    apply_multi_thr_nms(bboxes_in, score_thresh, nms_iou_thrs, max_per_image, use_gpu)
+    apply_multi_thr_nms(bboxes_in, score_thresh, nms_iou_thrs, max_per_image, use_gpu, ...
+    factor, scheme ...
+    )
 % Applies multi-threshold non-maximum-suppression step of scored candidate bounding boxes.
 
 assert(length(nms_iou_thrs) == length(max_per_image))
@@ -138,7 +145,7 @@ if ~isempty(bboxes_in)
     indices = inds{end}(1:min(max_per_image(end),length(inds{end}))); 
     indices = indices(:);
     % change the scores of the selected bounding boxes
-    scores  = (num_iou_thrs-1) + bboxes_in(indices,5); 
+    scores  = factor*(num_iou_thrs-1) + bboxes_in(indices,5); 
     
     for i = (num_iou_thrs-1):-1:1 % For the remaining NMS steps
         % (a) Find the indices of the bounding boxes produced during the i-th 
@@ -151,12 +158,12 @@ if ~isempty(bboxes_in)
         % boxes already selected. 
         
         % hyli: not 100% sure
-        temp = max_per_image(i)-length(indices);
-        %temp = max_per_image(i);
+        if strcmp(scheme, 'minus'), temp = max_per_image(i)-length(indices);    % default setting
+        elseif strcmp(scheme, 'no_minus'), temp = max_per_image(i); end
         
         inds_this_thr = inds_this_thr( 1 : min(temp, length(inds_this_thr)) );
         % change the scores of the just picked bounding boxes
-        scores_this_thr = (i-1) + bboxes_in(inds_this_thr,5);
+        scores_this_thr = factor*(i-1) + bboxes_in(inds_this_thr,5);
         
         % (c) Add the bounding boxes picked on the above step (set: inds_this_thr)
         % to the set of output bounding boxes (set: indices)
