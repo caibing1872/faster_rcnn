@@ -8,23 +8,28 @@
 function roidb = RPN_TEST_ilsvrc_hyli(test_folder, iter_name, varargin)
 
 ip = inputParser;
-%ip.addRequired('cache_base_proposal',                       @isstr);
 % 'test foler' means where the trained model (.caffemodel) resides.
 ip.addRequired('test_folder',                               @isstr);
 ip.addRequired('iter_name',                                 @isstr);
 ip.addRequired('model',                                     @isstruct);
 ip.addRequired('imdb',                                      @isstruct);
-ip.addRequired('roidb',                                      @isstruct);
+ip.addRequired('roidb',                                     @isstruct);
 ip.addRequired('conf_proposal',                             @isstruct);
 
 % by default all test programs use GPU=0
 ip.addParameter('mult_thr_nms',         false,              @islogical);
-ip.addParameter('nms_iou_thrs',         [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55],  @isnumeric);
-ip.addParameter('max_per_image',        [2000, 1000,  400,  200,  100,   40,   20,   10],  @isnumeric);
+ip.addParameter('nms_iou_thrs',         [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55],  ...
+                                                            @isnumeric);
+ip.addParameter('max_per_image',        [2000, 1000,  400,  200,  100,   40,   20,   10],  ...
+                                                            @isnumeric);
 ip.addParameter('gpu_id',               0,                  @isscalar);
 ip.addParameter('update_roi',           false,              @islogical);
 ip.addParameter('skip_rpn_test',        false,              @islogical);
 ip.addParameter('update_roi_name',      '',                 @isstr);
+ip.addParameter('factor',               1,                  @isnumeric);
+ip.addParameter('scheme',               'minus',            @isstr);
+ip.addParameter('save_intermediate_box','',                 @isstr);
+
 ip.parse(test_folder, iter_name, varargin{:});
 opts = ip.Results;
 
@@ -85,12 +90,19 @@ if ~opts.skip_rpn_test
                     % ==============
                     % ==== TEST ====
                     % UPDATE: NO LONGER save 'aboxes' in the cache.
-                    raw_aboxes = proposal_test(conf_proposal, ...
-                        imdb, ...
-                        'net_def_file',     model.stage1_rpn.test_net_def_file, ...
-                        'net_file',         output_model_file, ...
-                        'cache_name',       model.stage1_rpn.cache_name, ...
-                        'suffix',           suffix);
+                    % UPDATE: fuck. save it in some cases (multi-thres nms).
+                    try
+                        load(opts.save_intermediate_box);
+                    catch
+                        raw_aboxes = proposal_test(conf_proposal, ...
+                            imdb, ...
+                            'net_def_file',     model.stage1_rpn.test_net_def_file, ...
+                            'net_file',         output_model_file, ...
+                            'cache_name',       model.stage1_rpn.cache_name, ...
+                            'suffix',           suffix);
+                        if ~isempty(opts.save_intermediate_box), 
+                            save(opts.save_intermediate_box, 'raw_aboxes'); end
+                    end             
                     % only execute once
                     forward_flag = true;
                 end
@@ -98,23 +110,26 @@ if ~opts.skip_rpn_test
                 % ===== NMS ====
                 % extremely time-consuming
                 if ~opts.mult_thr_nms
+                    
                     aboxes = boxes_filter_inline(raw_aboxes, ...
                         nms.per_nms_topN, ...               % -1
                         nms.nms_overlap_thres(i), ...       % 0.6, 0.7, ...
                         nms.after_nms_topN, ...             % 2000
                         conf_proposal.use_gpu);
                 else
-                    fprintf('do multi-thres nms, taking quite a while (brew some coffe or take a walk!:)...\n');
+                    fprintf('do RPN multi-thres NMS, taking a while ...\n');
                     parfor kk = 1:length(raw_aboxes)
                         aboxes{kk} = AttractioNet_postprocess(raw_aboxes{kk}, 'thresholds', -inf, 'use_gpu', true, ...
                             'mult_thr_nms',     true, ...
                             'nms_iou_thrs',     opts.nms_iou_thrs, ...
+                            'factor',           opts.factor, ...
+                            'scheme',           opts.scheme, ...
                             'max_per_image',    opts.max_per_image);
                     end
                 end
             else
-                % case 2: will update roi
-                % also, the following assertion holds:
+                % case 2: will update roi and do testing and nms
+                % simultaneously. also, the following assertion holds:
                 assert(length(model.stage1_rpn.nms.nms_overlap_thres) == 1);
                 aboxes = proposal_test_plus_nms(conf_proposal, imdb, nms, ...
                     'net_def_file',     model.stage1_rpn.test_net_def_file, ...
@@ -137,6 +152,8 @@ if ~opts.skip_rpn_test
             'recall_per_cls');
     end
 end
+
+% for later fast-rcnn training and test
 if opts.update_roi
     
     assert(length(model.stage1_rpn.nms.nms_overlap_thres) == 1);

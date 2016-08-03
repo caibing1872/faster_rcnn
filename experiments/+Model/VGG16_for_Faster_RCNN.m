@@ -24,6 +24,18 @@ model.stage1_rpn.nms.note                       = 'default';
 model.stage1_rpn.nms.per_nms_topN               = -1;
 model.stage1_rpn.nms.nms_overlap_thres       	= 0.7;
 model.stage1_rpn.nms.after_nms_topN         	= 2000;
+% default for multi-thres nms
+model.stage1_rpn.nms.nms_iou_thrs   = [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55];
+model.stage1_rpn.nms.max_per_image  = [2000, 1000,  400,  200,  100,   40,   20,   10];
+% % set 1, 84.12
+% model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
+% model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  400,  300,   200,   100,   50];
+% % set 2, 68.55
+% model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80,  0.75, 0.70, 0.65,  0.60, 0.55,  0.50];
+% model.stage1_rpn.nms.max_per_image  = [2000, 50,    200,  400,  600,   800,  1000,  100];
+% % set 3 and 4 (no minus previous boxes)
+% model.stage1_rpn.nms.nms_iou_thrs   = [0.90, 0.80, 0.75, 0.70, 0.65, 0.60, 0.55, 0.50];
+% model.stage1_rpn.nms.max_per_image  = [2000, 1000,  500,  500,  500,  500,  500,  300];
 
 %% stage 1 fast rcnn, inited from pre-trained network
 model.stage1_fast_rcnn.solver_def_file = fullfile(pwd, 'models', ...
