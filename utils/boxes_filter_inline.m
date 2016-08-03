@@ -22,7 +22,7 @@ end
 aver_boxes_num = mean(cellfun(@(x) size(x, 1), aboxes, 'UniformOutput', true));
 fprintf('aver_boxes_num = %d, select top %d\n', round(aver_boxes_num), after_nms_topN);
 if after_nms_topN > 0
-    aboxes = cellfun(@(x) x(1:min(length(x), after_nms_topN), :), aboxes, 'UniformOutput', false);
+    aboxes = cellfun(@(x) x(1:min(size(x,1), after_nms_topN), :), aboxes, 'UniformOutput', false);
 end
 end
 
