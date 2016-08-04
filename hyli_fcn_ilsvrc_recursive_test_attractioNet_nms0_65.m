@@ -1,7 +1,3 @@
-% RPN and FCNtraining and testing on ilsvrc
-%
-% refactor by hyli on July 28, 2016
-% ---------------------------------------------------------
 caffe.reset_all();
 clear; run('./startup');
 %% init
@@ -10,7 +6,7 @@ opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
 use_flipped = false;
-opts.gpu_id = 2;
+opts.gpu_id = 1;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
@@ -18,8 +14,6 @@ model = Model.VGG16_for_Faster_RCNN(...
     'solver_10w30w_ilsvrc_9anchor', 'test_9anchor', ...     % rpn
     'solver_5w15w_2', 'test_2' ...                          % fast_rcnn
     );
-% finetune: uncomment the following if init from another model
-% ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 % --------------------------- FCN ----------------------------
 fast_rcnn_net_file = [{'train14'}, {'final'}];
 % if you want to generate new train_val_data, 'update_roi' must be set
@@ -27,11 +21,11 @@ fast_rcnn_net_file = [{'train14'}, {'final'}];
 % update: you MUST update roi when test (TODO: explain more here).
 update_roi                  = true;
 update_roi_name             = '1';
-%update_roi_name             = 'M27_nms0.55';      % name in the imdb folder after adding NMS additional boxes
-
+% name in the imdb folder after adding NMS additional boxes
+% update_roi_name             = 'M27_nms0.55';      
 binary_train                = true;
 % FCN cache folder name
-%cache_base_FCN              = 'FCN_try_local';
+% cache_base_FCN              = 'FCN_try_local';
 cache_base_FCN              = 'F02_ls149';
 share_data_FCN              = '';
 fcn_fg_thresh               = 0.5;
@@ -40,12 +34,9 @@ fcn_bg_thresh_lo            = 0.1;
 fcn_scales                  = [600];
 fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
-%
-% skip_fast_rcnn_test
 
 fast_rcnn_after_nms_topN    = 2000;
 fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4];
-%fast_nms_overlap_thres = [0.5 : -.05 : 0.3];
 % --------------------------- RPN ----------------------------
 % NOTE: this variable stores BOTH RPN and FCN in the 'config_temp' folder
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
@@ -72,7 +63,6 @@ bg_thresh_hi = 0.5;     % 0.3 default
 scales = [600];
 % ==========================================================
 % ==========================================================
-
 model.stage1_rpn.nms.mult_thr_nms = false;
 if isnan(str2double(model.stage1_rpn.nms.note)), model.stage1_rpn.nms.mult_thr_nms = true; end
 model = Faster_RCNN_Train.set_cache_folder(cache_base_RPN, cache_base_FCN, model);
@@ -83,8 +73,6 @@ if exist('ft_file', 'var')
 else
     net_file = model.stage1_rpn.init_net_file;
 end
-
-
 caffe.set_device(opts.gpu_id);
 caffe.set_mode_gpu();
 % config, must be input after setting caffe
@@ -167,73 +155,62 @@ dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
 %     ), dataset.imdb_train, dataset.roidb_train, 'UniformOutput', false);
 
 %% fast rcnn train
-% cprintf('blue', '\nStage two Fast-RCNN cascade TRAINING...\n');
-% model.stage1_fast_rcnn.output_model_file = fast_rcnn_train(...
-%     conf_fast_rcnn, ...
-%     dataset.imdb_train, dataset.roidb_train, opts.train_key, ...
-%     'do_val',               opts.do_val, ...
-%     'imdb_val',             dataset.imdb_test, ...
-%     'roidb_val',            dataset.roidb_test, ...
-%     'solver_def_file',      model.stage1_fast_rcnn.solver_def_file, ...
-%     'net_file',             model.stage1_fast_rcnn.init_net_file, ...
-%     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
-%     'val_iters',            500, ...
-%     'val_interval',         20000, ...
-%     'snapshot_interval',    100, ...
-%     'binary',               binary_train ...
-%     );
-
 % add more proposal here
 % if adding more proposals, you need to increase the number here
 test_max_per_image          = 10001; %10000; %100;
 % if avg == max_per_im, there's no reduce in the number of boxes.
 test_avg_per_image          = 10001; %10000; %500; %40;
 
-%name = 'rpn_plus_attend';
-%name = 'rpn_plus_attend_all';
-%name = 'only_attend_all';
-name = 'only_attend_nms0_50';
-%name = 'only_attend_nms0_65';
-%name = 'rpn_plus_attend_nms0_65';
+% the name where new roidb resides
+name = 'new_roidb_file_attrac_nms0_65';
+mkdir_if_missing(['./imdb/cache/ilsvrc/' name]);
 FLIP = 'unflip';
-new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
-    ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
+% the newly generated boxes after testing
+new_box_prefix = './output/fast_rcnn_cachedir/F02_ls149_nms0_7_top2000_stage1_fast_rcnn/ilsvrc14_val2/final';
+box_name = sprintf('binary_boxes_ilsvrc14_val2_max_%d_avg_%d', ...
+    test_max_per_image, test_avg_per_image);
 keep_raw = false;
-%attention_box_name = 'bbox_props_cands_Aug_1_default.mat';
-attention_box_name = 'boxes_nms_0.50.mat';
-%attention_box_name = 'boxes_nms_0.65.mat';
-test_sub_folder_suffix = 'F23';
 
-if ~exist(new_roidb_file, 'file')
-    % load attention boxes
-    %ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.50.mat');
-    %ld = load(['/home/hongyang/project/AttractioNet/' attention_box_name]);
-    ld = load(['./functions/external_prop/attractioNet/' attention_box_name]);
-    %ld = load('/home/hongyang/project/AttractioNet/box_proposals/author_provide/val2/attentioNet_provided_model_July_31_merge/boxes_nms_0.65.mat');
+% store the new roidb in the following folder
+new_roidb_file = @(x) fullfile(pwd, 'imdb/cache/ilsvrc', name, ...
+    ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_iter_%d.mat', x)]);
+% these are stored in the output of fast-rcnn folder
+test_sub_folder_suffix = @(x) sprintf('attrac_nms0_65_F24_%d', x);
+
+for i = 1:7
+       
+    if ~exist(new_roidb_file(i), 'file')
+        % load boxes in the last iteration
+        if i == 1
+            load_name = ['./functions/external_prop/attractioNet/boxes_nms_0.65.mat'];
+        else
+            load_name = [new_box_prefix '_' ...
+                test_sub_folder_suffix(i-1) '/' box_name]; 
+        end
+        ld = load(load_name);
+        try aboxes = ld.boxes; catch, aboxes = ld.aboxes; end
+        
+        roidb_regions = [];
+        roidb_regions.boxes = aboxes;
+        roidb_regions.images = dataset.imdb_test.image_ids;
+        % update roidb in 'imdb' folder
+        roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
+            roidb_regions, 'keep_raw_proposal', keep_raw, 'mat_file', new_roidb_file(i));
+    end
+    ld = load(new_roidb_file(i));
+    dataset.roidb_test.rois = ld.rois;
     
-    try aboxes = ld.aboxes; catch, aboxes = ld.boxes_uncut; end
-    roidb_regions = [];
-    roidb_regions.boxes = aboxes;
-    roidb_regions.images = dataset.imdb_test.image_ids;
-    % update roidb in 'imdb' folder
-    roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
-        roidb_regions, 'keep_raw_proposal', keep_raw, 'mat_file', new_roidb_file);
+    cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
+    fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...
+        'net_def_file',             model.stage1_fast_rcnn.test_net_def_file, ...
+        'net_file',                 fast_rcnn_net_file, ...
+        'cache_name',               model.stage1_fast_rcnn.cache_name, ...
+        'binary',                   binary_train, ...
+        'max_per_image',            test_max_per_image, ...
+        'avg_per_image',            test_avg_per_image, ...
+        'nms_overlap_thres',        fast_nms_overlap_thres, ...
+        'test_sub_folder_suffix',   test_sub_folder_suffix(i), ...
+        'after_nms_topN',           fast_rcnn_after_nms_topN ...
+        );
 end
-ld = load(new_roidb_file);
-dataset.roidb_test.rois = ld.rois;
-
-% 'net_file', model.stage1_fast_rcnn.output_model_file, ...
-cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
-fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...
-    'net_def_file',             model.stage1_fast_rcnn.test_net_def_file, ...
-    'net_file',                 fast_rcnn_net_file, ...
-    'cache_name',               model.stage1_fast_rcnn.cache_name, ...
-    'binary',                   binary_train, ...
-    'max_per_image',            test_max_per_image, ...
-    'avg_per_image',            test_avg_per_image, ...
-    'nms_overlap_thres',        fast_nms_overlap_thres, ...
-    'test_sub_folder_suffix',   test_sub_folder_suffix, ...
-    'after_nms_topN',           fast_rcnn_after_nms_topN ...
-    );
-
 exit;

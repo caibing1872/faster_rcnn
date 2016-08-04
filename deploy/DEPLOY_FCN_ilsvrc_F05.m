@@ -1,7 +1,6 @@
 % RPN training and testing on ilsvrc
 %
 % refactor by hyli on July 13 2016
-%
 % ---------------------------------------------------------
 
 % clc;
@@ -12,6 +11,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
+fast_rcnn_net_file = [{'train14'}, {'final'}];
 opts.gpu_id = 0;
 % opts.train_key = 'train_val1';
 opts.train_key = 'train14';
@@ -24,19 +24,27 @@ model = Model.VGG16_for_Faster_RCNN(...
 % ft_file = './output/rpn_cachedir/NEW_ILSVRC_vgg16_stage1_rpn/train14/iter_75000.caffemodel';
 
 % --------------------------- FCN ----------------------------
-update_roi                  = false;     % if false, won't update roidb
+% must set true when FCN test
+update_roi                  = true;     % if false, won't update roidb
 update_roi_name             = '1';      % name in the imdb folder after adding NMS additional boxes
 skip_rpn_test               = true;     % won't do test and compute recall
 binary_train                = true;
 % FCN cache folder name
 cache_base_FCN              = 'F05_ls139';         
-share_data_FCN              = 'F01_ls149';
+share_data_FCN              = 'F04_ls149';
 fcn_fg_thresh               = 0.5;
 fcn_bg_thresh_hi            = 0.3;
 fcn_bg_thresh_lo            = 0;
 fcn_scales                  = [600];
 fcn_fg_fraction             = 0.25;
 fcn_max_size                = 1000;
+
+test_max_per_image          = 2000; %1000; %100;
+% if avg == max_per_im, there's no reduce in the number of boxes.
+test_avg_per_image          = 2000; %1000; %500; %40;
+
+fast_rcnn_after_nms_topN    = 2000;
+fast_nms_overlap_thres = [0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5];
 % --------------------------- RPN ----------------------------
 % cache_base_RPN = 'NEW_ILSVRC_ls139';
 cache_base_RPN = 'M02_s31';
@@ -174,7 +182,22 @@ model_stage.output_model_file = fast_rcnn_train(...
     'cache_name',           model.stage1_fast_rcnn.cache_name, ...
     'val_iters',            500, ...
     'val_interval',         20000, ...
-    'snapshot_interval',    20000, ...
+    'solverstate',          'iter_110000', ...
+    'snapshot_interval',    10000, ...
     'binary',               binary_train ...
     );
+
+% 'net_file', model.stage1_fast_rcnn.output_model_file, ...
+cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
+fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...
+    'net_def_file',         model.stage1_fast_rcnn.test_net_def_file, ...
+    'net_file',             fast_rcnn_net_file, ...
+    'cache_name',           model.stage1_fast_rcnn.cache_name, ...
+    'binary',               binary_train, ...
+    'max_per_image',        test_max_per_image, ...
+    'avg_per_image',        test_avg_per_image, ...
+    'nms_overlap_thres',    fast_nms_overlap_thres, ...
+    'after_nms_topN',       fast_rcnn_after_nms_topN ...
+    );
+
 exit;
