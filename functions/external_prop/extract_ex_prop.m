@@ -1,18 +1,21 @@
 clear; close all;
-
 nms_range = [.8 : -.05 : 0.3];
 % result_name = 'aug_1st_edge';
 % method = 'edgebox';
-
 % result_name = 'aug_1st_ss_score';
 % method = 'selective_search';
 % sub_dataset = 'val2';
 % imdb.name = 'ilsvrc14_val2';
 
-result_name = 'aug_5th_ss';
-method = 'selective_search';
+result_name = 'aug_5th_edge';
+method = 'edgebox';
+% result_name = 'aug_5th_ss';
+% method = 'selective_search';
+
 sub_dataset = 'val1';
 imdb.name = 'ilsvrc14_val1';
+% sub_dataset = 'train14';
+% imdb.name = 'ilsvrc14_train14';
 
 % note: we don't differentiate top_k when saving them
 % top_k = [300, 500, 1000, 2000];
@@ -42,13 +45,13 @@ switch imdb.name
         fid = fopen([root_folder '/data/det_lists/train14.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
-        im_path = [root_folder '/../ILSVRC2014_DET_bbox_train'];
+        im_path = [root_folder '/../ILSVRC2014_DET_train'];
         extension = '.JPEG';
         imdb.flip = true;
         
     case 'ilsvrc14_val1'
         root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
-        fid = fopen([root_folder '/data/det_lists/val2.txt'], 'r');
+        fid = fopen([root_folder '/data/det_lists/val1.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
         im_path = [root_folder '/../ILSVRC2013_DET_val'];
@@ -89,7 +92,11 @@ if strcmp(method, 'edgebox')
         opts.minScore = .01;  % min score of boxes to detect
         opts.maxBoxes = 1e4;  % max number of boxes to detect
         
-        parfor i = 1:length(test_im_list)
+        for i = 1:length(test_im_list)
+            if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
+                fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
+                    method, sub_dataset, i, length(test_im_list));
+            end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             temp = edgeBoxes(im, model, opts);
@@ -105,7 +112,11 @@ elseif strcmp(method, 'selective_search')
     
     if ~exist(save_name, 'file')
         aboxes = cell(length(test_im_list), 1);
-        parfor i = 1:length(test_im_list)
+        for i = 1:length(test_im_list)
+            if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
+                fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
+                    method, sub_dataset, i, length(test_im_list));
+            end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             [temp, score] = selective_search_boxes(im);
