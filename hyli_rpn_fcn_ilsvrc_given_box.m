@@ -135,13 +135,13 @@ test_max_per_image          = 10001; %10000; %100;
 % if avg == max_per_im, there's no reduce in the number of boxes.
 test_avg_per_image          = 10001; %10000; %500; %40;
 
-name = 'ss_only';
+name = 'edge_only';
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
 keep_raw = false;
-test_sub_folder_suffix = 'F13';
-load_name = './box_proposals/val2/aug_1st_ss/boxes_right_format.mat';
+test_sub_folder_suffix = 'F12';
+load_name = './box_proposals/val2/aug_1st_edge/boxes_right_format.mat';
 
 if ~exist(new_roidb_file, 'file')
     
