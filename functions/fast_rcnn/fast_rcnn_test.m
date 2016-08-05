@@ -225,7 +225,6 @@ if ~opts.binary
 else
     %% NMS step
     raw_aboxes = aboxes{1};
-    
     if isempty(opts.nms)
         % normal nms
         best_recall = 0;
@@ -274,6 +273,7 @@ else
             opts.nms.note, mean_recall);
         save([cache_dir_sub '/' opts.nms.note sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
     end
+    
 end
 diary off;
 end
