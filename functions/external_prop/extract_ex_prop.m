@@ -7,15 +7,15 @@ nms_range = [.8 : -.05 : 0.3];
 % sub_dataset = 'val2';
 % imdb.name = 'ilsvrc14_val2';
 
-result_name = 'aug_5th_edge';
-method = 'edgebox';
-% result_name = 'aug_5th_ss';
-% method = 'selective_search';
+%result_name = 'aug_5th_edge';
+%method = 'edgebox';
+result_name = 'aug_5th_ss';
+method = 'selective_search';
 
-sub_dataset = 'val1';
-imdb.name = 'ilsvrc14_val1';
-% sub_dataset = 'train14';
-% imdb.name = 'ilsvrc14_train14';
+%sub_dataset = 'val1';
+%imdb.name = 'ilsvrc14_val1';
+sub_dataset = 'train14';
+imdb.name = 'ilsvrc14_train14';
 
 % note: we don't differentiate top_k when saving them
 % top_k = [300, 500, 1000, 2000];
@@ -41,7 +41,7 @@ switch imdb.name
         extension = '.jpg';
         
     case 'ilsvrc14_train14'
-        root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
         fid = fopen([root_folder '/data/det_lists/train14.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
@@ -50,7 +50,7 @@ switch imdb.name
         imdb.flip = true;
         
     case 'ilsvrc14_val1'
-        root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
         fid = fopen([root_folder '/data/det_lists/val1.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
@@ -59,7 +59,7 @@ switch imdb.name
         imdb.flip = true;
         
     case 'ilsvrc14_val2'
-        root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
         fid = fopen([root_folder '/data/det_lists/val1.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
@@ -172,3 +172,5 @@ for i = 1:length(top_k)
             method, top_k(i), 100*mean_recall);
     end
 end
+
+exit;
