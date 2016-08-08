@@ -9,7 +9,7 @@ opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
 use_flipped = false;
-opts.gpu_id = 3;
+opts.gpu_id = 2;
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN(...
@@ -24,7 +24,7 @@ fast_rcnn_net_file = [{'train14'}, {'final'}];
 update_roi                  = true;
 % name in the imdb folder after adding NMS additional boxes
 update_roi_name             = '1';
-% update_roi_name             = 'M27_nms0.55';      
+% update_roi_name             = 'M27_nms0.55';
 
 binary_train                = true;
 % FCN cache folder name
@@ -135,35 +135,31 @@ test_max_per_image          = 10001; %10000; %100;
 % if avg == max_per_im, there's no reduce in the number of boxes.
 test_avg_per_image          = 10001; %10000; %500; %40;
 
-<<<<<<< HEAD
-name = 'edge_only';
+name = 'combo_1';
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
+test_sub_folder_suffix = 'F15';
 keep_raw = false;
-test_sub_folder_suffix = 'F12';
-load_name = './box_proposals/val2/aug_1st_edge/boxes_right_format.mat';
-=======
-name = 'ss_rpn';
-FLIP = 'unflip';
-new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
-    ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
-keep_raw = true;
-test_sub_folder_suffix = 'F13a';
-load_name = './box_proposals/val2/aug_1st_ss/boxes_right_format.mat';
->>>>>>> 3216862a757e9837ecbaac20b85689976a374824
+
+load_name{1} = './box_proposals/val2/aug_1st_ss/boxes_right_format.mat';
+load_name{2} = './box_proposals/val2/aug_1st_edge/boxes_nms_0.50.mat';
+load_name{3} = './box_proposals/val2/attractioNet/boxes_nms_0.65.mat';
 
 if ~exist(new_roidb_file, 'file')
     
-    % load attention boxes
-    ld = load(load_name);
-    try aboxes = ld.aboxes; catch, aboxes = ld.boxes_uncut; end
-    roidb_regions = [];
-    roidb_regions.boxes = aboxes;
-    roidb_regions.images = dataset.imdb_test.image_ids;
-    % update roidb in 'imdb' folder
-    roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
-        roidb_regions, 'keep_raw_proposal', keep_raw, 'mat_file', new_roidb_file);
+    for i = 1:length(load_name)
+        % load attention boxes
+        ld = load(load_name{i});
+        try aboxes = ld.aboxes; catch, aboxes = ld.boxes_uncut; end
+        roidb_regions = [];
+        roidb_regions.boxes = aboxes;
+        roidb_regions.images = dataset.imdb_test.image_ids;
+        % update roidb in 'imdb' folder
+        roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
+            roidb_regions, 'keep_raw_proposal', keep_raw, 'mat_file', new_roidb_file);
+        if i == 1, keep_raw = true; end
+    end
 end
 ld = load(new_roidb_file);
 dataset.roidb_test.rois = ld.rois;
