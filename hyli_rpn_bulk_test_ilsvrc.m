@@ -49,7 +49,7 @@ if strcmp(caffemodel_dir(1).name, 'final.caffemodel')
     
     fprintf('\nComputing final model ...\n');
     RPN_TEST_ilsvrc_hyli(train_key, 'final', ...
-        model, dataset, conf_proposal, 'update_roi', false);
+        model, dataset.imdb_test, dataset.roidb_test, conf_proposal, 'update_roi', false);
     caffemodel_dir = caffemodel_dir(2:end);
 end
 

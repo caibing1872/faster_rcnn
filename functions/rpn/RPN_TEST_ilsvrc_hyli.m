@@ -81,6 +81,7 @@ if ~opts.skip_rpn_test
             disp(nms);
             output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
                 model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
+            assert('trained caffemodel does not exit! %s', output_model_file);
             
             % update: if opts.update_roi is set true, skip this and do NMS within
             % the proposal_test procedure, hopefully save memory!
