@@ -1,31 +1,36 @@
-%clc;
 clear; close all;
-
 nms_range = [.8 : -.05 : 0.3];
-%nms_range = [.45 : -.05 : 0.3];
 % result_name = 'aug_1st_edge';
 % method = 'edgebox';
-update_edge_format = false;
+% result_name = 'aug_1st_ss_score';
+% method = 'selective_search';
+% sub_dataset = 'val2';
+% imdb.name = 'ilsvrc14_val2';
 
-result_name = 'aug_1st_ss_score';
-method = 'selective_search';
-update_ss_format = false;
+result_name = 'aug_5th_edge';
+method = 'edgebox';
+% result_name = 'aug_5th_ss';
+% method = 'selective_search';
 
-imdb.name = 'ilsvrc14_val2';
-imdb.flip = false;
-dataset = 'ilsvrc';
+sub_dataset = 'val1';
+imdb.name = 'ilsvrc14_val1';
+% sub_dataset = 'train14';
+% imdb.name = 'ilsvrc14_train14';
 
-%top_k = [300, 500, 1000, 2000];
+% note: we don't differentiate top_k when saving them
+% top_k = [300, 500, 1000, 2000];
 top_k = 300;
-%%
-addpath(genpath('./functions/external_prop/edgebox'));
-addpath(genpath('./functions/external_prop/selective_search'));
+
+%% config
+addpath(genpath('./functions/external_prop'));
 result_path = './box_proposals/val2';
-mkdir_if_missing([result_path '/' result_name]);
-save_name = [result_path '/' result_name '/boxes.mat'];
-switch dataset
+mkdir_if_missing(['./box_proposals/' sub_dataset '/' result_name]);
+save_name = ['./box_proposals/' sub_dataset '/' result_name '/boxes_right_format.mat'];
+
+switch imdb.name
     case 'pascal'
         % pascal test set
+        % not tested since update to ilsvrc dataset
         dataset_root = '/media/hongyang/research_at_large/Q-dataset/pascal/VOCdevkit/VOC2007';
         testset = [dataset_root '/ImageSets/Main/*_test.txt'];
         testset_dir = dir(testset);
@@ -34,17 +39,43 @@ switch dataset
         test_im_list = temp{1}; clear temp;
         im_path = [dataset_root '/JPEGImages'];
         extension = '.jpg';
-    case 'ilsvrc'
-        % ilsvrc val2
+        
+    case 'ilsvrc14_train14'
         root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
-        fid = fopen([root_folder '/data/det_lists/val2.txt'], 'r');
+        fid = fopen([root_folder '/data/det_lists/train14.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2014_DET_train'];
+        extension = '.JPEG';
+        imdb.flip = true;
+        
+    case 'ilsvrc14_val1'
+        root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/val1.txt'], 'r');
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
         im_path = [root_folder '/../ILSVRC2013_DET_val'];
         extension = '.JPEG';
+        imdb.flip = true;
+        
+    case 'ilsvrc14_val2'
+        root_folder = '/home/hongyang/dataset/imagenet_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/val1.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2013_DET_val'];
+        extension = '.JPEG';
+        imdb.flip = false;
+end
+if imdb.flip
+    test_im_list_flip = cellfun(@(x) [x '_flip'], test_im_list, 'uniformoutput', false);
+    test_im_list_new = cell(2*length(test_im_list_flip), 1);
+    test_im_list_new(1:2:end) = test_im_list;
+    test_im_list_new(2:2:end) = test_im_list_flip;
+    test_im_list = test_im_list_new;
 end
 
-%%
+%% extract boxes
 if strcmp(method, 'edgebox')
     
     if ~exist(save_name, 'file')
@@ -61,7 +92,11 @@ if strcmp(method, 'edgebox')
         opts.minScore = .01;  % min score of boxes to detect
         opts.maxBoxes = 1e4;  % max number of boxes to detect
         
-        parfor i = 1:length(test_im_list)
+        for i = 1:length(test_im_list)
+            if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
+                fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
+                    method, sub_dataset, i, length(test_im_list));
+            end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             temp = edgeBoxes(im, model, opts);
@@ -77,7 +112,11 @@ elseif strcmp(method, 'selective_search')
     
     if ~exist(save_name, 'file')
         aboxes = cell(length(test_im_list), 1);
-        parfor i = 1:length(test_im_list)
+        for i = 1:length(test_im_list)
+            if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
+                fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
+                    method, sub_dataset, i, length(test_im_list));
+            end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             [temp, score] = selective_search_boxes(im);
@@ -89,31 +128,33 @@ elseif strcmp(method, 'selective_search')
     end
 end
 
-% almost deprecated below
-if update_edge_format
-    
-    load(save_name);
-    aboxes = cellfun(@change_edgebox, aboxes, 'uniformoutput', false);
-    save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
-end
-if update_ss_format
-    
-    load(save_name);
-    aboxes = cellfun(@(x) x(:, [2 1 4 3]), aboxes, 'uniformoutput', false);
-    save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
-end
+% % almost deprecated below
+% if update_edge_format
+%
+%     load(save_name);
+%     aboxes = cellfun(@change_edgebox, aboxes, 'uniformoutput', false);
+%     save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
+% end
+% if update_ss_format
+%
+%     load(save_name);
+%     aboxes = cellfun(@(x) x(:, [2 1 4 3]), aboxes, 'uniformoutput', false);
+%     save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
+% end
 
-%%
+%% compute recall
 for i = 1:length(top_k)
     
     if ~isempty(nms_range)
-        
-        try ld = load([save_name(1:end-4) '_right_format.mat']);
-        catch, ld = load(save_name); end
+        % try different nms
+        ld = load(save_name);
         aboxes_raw = ld.aboxes;
+        % make sure it has a score
         assert(size(aboxes_raw{1}, 2)==5);
+        
         for j = 1:length(nms_range)
-            aboxes = boxes_filter_inline(aboxes_raw, -1, nms_range(j), 2000, true);
+            
+            aboxes = boxes_filter_inline(aboxes_raw, -1, nms_range(j), -1, true);
             save([save_name(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], ...
                 'aboxes', '-v7.3');
             
@@ -124,10 +165,8 @@ for i = 1:length(top_k)
                 method, top_k(i), nms_range(j), 100*mean_recall);
         end
     else
-        recall_per_cls = compute_recall_ilsvrc(...
-            [save_name(1:end-4) '_right_format.mat'], top_k(i), imdb);
-        %     recall_per_cls = compute_recall_ilsvrc(save_name, top_k(i), imdb);
-        
+        % no nms
+        recall_per_cls = compute_recall_ilsvrc(save_name, top_k(i), imdb);
         mean_recall = mean(extractfield(recall_per_cls, 'recall'));
         cprintf('blue', 'method:: %s, top_k:: %d, mean rec:: %.2f\n\n', ...
             method, top_k(i), 100*mean_recall);
