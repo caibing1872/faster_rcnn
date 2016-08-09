@@ -9,7 +9,7 @@ opts.do_val = true;
 % ===========================================================
 % ======================= USER DEFINE =======================
 use_flipped = false;
-opts.gpu_id = 2;
+opts.gpu_id = 0;
 opts.train_key = 'train14';
 % load paramters from the 'models' folder
 model = Model.VGG16_for_Faster_RCNN(...
@@ -48,7 +48,7 @@ cache_base_RPN = 'M02_s31';
 % share_data_RPN = 'M04_ls149';
 share_data_RPN = '';
 % won't do test and compute recall
-skip_rpn_test               = true;
+skip_rpn_test               = false;
 
 model.anchor_size = 2.^(3:5);
 model.ratios = [0.5, 1, 2];
@@ -111,8 +111,8 @@ conf_fast_rcnn.update_roi_name      = update_roi_name;
 dataset = [];
 % change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
-dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
-dataset = Dataset.ilsvrc14(dataset, opts.train_key, use_flipped, root_path);
+% dataset = Dataset.ilsvrc14(dataset, 'test', false, root_path);
+dataset = Dataset.ilsvrc14(dataset, 'test_no_gt', false, root_path);
 
 %%
 % test: compute recall and update roidb on TEST
@@ -139,7 +139,7 @@ name = 'combo_1';
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
-test_sub_folder_suffix = 'F15';
+test_sub_folder_suffix = 'F15b';
 keep_raw = false;
 
 load_name{1} = './box_proposals/val2/aug_1st_ss/boxes_right_format.mat';

@@ -37,31 +37,49 @@ end
 try
     load(cache_file);
 catch
-    NUM_CLS         = 200;
-    bbox_path.train = fullfile(root_dir, 'ILSVRC2014_DET_bbox_train');
-    bbox_path.val   = fullfile(root_dir, 'ILSVRC2013_DET_bbox_val');
-    im_path.test    = fullfile(root_dir, 'ILSVRC2013_DET_test');
-    im_path.train14 = fullfile(root_dir, 'ILSVRC2014_DET_train');
-    im_path.val     = fullfile(root_dir, 'ILSVRC2013_DET_val');
-    im_path.val1    = fullfile(root_dir, 'ILSVRC2013_DET_val');
-    im_path.val2    = fullfile(root_dir, 'ILSVRC2013_DET_val');
-    devkit_path     = fullfile(root_dir, 'ILSVRC2014_devkit');
+    NUM_CLS                 = 200;
+    bbox_path.train         = fullfile(root_dir, 'ILSVRC2014_DET_bbox_train');
+    bbox_path.val           = fullfile(root_dir, 'ILSVRC2013_DET_bbox_val');
+    im_path.test            = fullfile(root_dir, 'ILSVRC2013_DET_test');
+    im_path.train14         = fullfile(root_dir, 'ILSVRC2014_DET_train');
+    im_path.val             = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.val1            = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.val2            = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.val2_no_GT      = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    devkit_path             = fullfile(root_dir, 'ILSVRC2014_devkit');
     
-    meta_det        = load(fullfile(devkit_path, 'data', 'meta_det.mat'));
-    imdb.name       = ['ilsvrc14_' image_set];
-    imdb.extension  = 'JPEG';
-    is_blacklisted  = containers.Map;
+    meta_det                = load(fullfile(devkit_path, 'data', 'meta_det.mat'));
+    imdb.name               = ['ilsvrc14_' image_set];
+    imdb.extension          = 'JPEG';
+    is_blacklisted          = containers.Map;
     
     if strcmp(image_set, 'val') || strcmp(image_set, 'val1') || ...
             strcmp(image_set, 'val2') || strcmp(image_set, 'test') || ...
-            strcmp(image_set, 'train14')
+            strcmp(image_set, 'train14') || strcmp(image_set, 'val2_no_GT')
         
         imdb.image_dir = im_path.(image_set);
         imdb.details.image_list_file = ...
             fullfile(devkit_path, 'data', 'det_lists', [image_set '.txt']);
-        fid = fopen(imdb.details.image_list_file, 'r');
-        temp = textscan(fid, '%s %d');
-        imdb.image_ids = temp{1};   % cell type
+        
+        if exist(imdb.details.image_list_file, 'file')
+            fid = fopen(imdb.details.image_list_file, 'r');
+            temp = textscan(fid, '%s %d');
+            imdb.image_ids = temp{1};   % cell type
+        else
+            if strcmp(image_set, 'val2_no_GT')
+                fid1_temp = fopen(fullfile(devkit_path, 'data', 'det_lists', 'val2_original.txt'), 'r');
+                temp = textscan(fid1_temp, '%s %d');
+                complete_im_list1 = temp{1};   % cell type    
+                fid2_temp = fopen(fullfile(devkit_path, 'data', 'det_lists', 'val2.txt'), 'r');
+                temp = textscan(fid2_temp, '%s %d');
+                complete_im_list2 = temp{1};       % cell type    
+                assert(length(complete_im_list1) >= length(complete_im_list2));
+                
+                imdb.image_ids = setdiff(complete_im_list1, complete_im_list2);
+            else
+                error('image_list_file does not exist! %s', imdb.details.image_list_file);
+            end
+        end       
         imdb.flip = flip;
         
         % blacklist case
@@ -70,7 +88,7 @@ catch
             
             imdb.details.blacklist_file = ...
                 fullfile(devkit_path, 'data', ...
-                'ILSVRC2014_det_validation_blacklist.txt');      
+                'ILSVRC2014_det_validation_blacklist.txt');
             [bl_image_ids, ~] = textread(imdb.details.blacklist_file, '%d %s');
             is_blacklisted = containers.Map(bl_image_ids, ones(length(bl_image_ids), 1));
             
@@ -79,7 +97,7 @@ catch
         end
         
         if strcmp(image_set, 'val') || strcmp(image_set, 'val1') ...
-                || strcmp(image_set, 'val2')
+                || strcmp(image_set, 'val2') || strcmp(image_set, 'val2_no_GT')
             imdb.details.bbox_path = bbox_path.val;
         elseif strcmp(image_set, 'train14')
             imdb.details.bbox_path = bbox_path.train;
@@ -117,14 +135,14 @@ catch
     % private ILSVRC 2014 details
     imdb.details.meta_det    = meta_det;
     imdb.details.root_dir    = root_dir;
-    imdb.details.devkit_path = devkit_path;  
+    imdb.details.devkit_path = devkit_path;
     % VOC-style specific functions for evaluation and region of interest DB
     imdb.eval_func = @imdb_eval_ilsvrc14;
     imdb.roidb_func = @roidb_from_ilsvrc14;
     
     % read each image to get the 'imdb.sizes'
     % Some images are blacklisted due to noisy annotations
-    imdb.is_blacklisted = false(length(imdb.image_ids), 1);    
+    imdb.is_blacklisted = false(length(imdb.image_ids), 1);
     for i = 1:length(imdb.image_ids)
         tic_toc_print('imdb (%s): %d/%d\n', imdb.name, i, length(imdb.image_ids));
         try

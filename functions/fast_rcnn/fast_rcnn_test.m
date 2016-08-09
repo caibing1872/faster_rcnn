@@ -197,6 +197,9 @@ catch
     rng(prev_rng);
 end
 
+do_nms_switch = true;
+if strcmp(imdb.name, 'ilsvrc14_val2_no_GT'), do_nms_switch = false; end
+
 if ~opts.binary
     % ------------------------------------------------------------------------
     % Peform AP evaluation (do nms inside the eval code)
@@ -240,16 +243,19 @@ else
                     after_nms_topN, true);
                 save(temp, 'aboxes');
             end
-            % compute recall
-            recall_per_cls = compute_recall_ilsvrc(...
-                save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
-            mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
             
-            cprintf('blue', 'nms (thres: %.2f, topN: %d), mean rec:: %.2f\n\n', ...
-                nms_overlap_thres(i), after_nms_topN, mean_recall);
-            save([temp(1:end-4) sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
-            
-            if mean_recall > best_recall, best_recall = mean_recall; end
+            if do_nms_switch
+                % compute recall
+                recall_per_cls = compute_recall_ilsvrc(...
+                    save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
+                mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
+                
+                cprintf('blue', 'nms (thres: %.2f, topN: %d), mean rec:: %.2f\n\n', ...
+                    nms_overlap_thres(i), after_nms_topN, mean_recall);
+                save([temp(1:end-4) sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
+                
+                if mean_recall > best_recall, best_recall = mean_recall; end
+            end
         end
         mAP = best_recall;
     else
@@ -264,14 +270,16 @@ else
                 'max_per_image',    opts.nms.max_per_image);
         end
         save([cache_dir_sub '/' opts.nms.note '.mat'], 'aboxes', '-v7.3');
-        % compute recall
-        recall_per_cls = compute_recall_ilsvrc(...
-            [cache_dir_sub '/' opts.nms.note '.mat'], 300, imdb);
-        mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
-        
-        cprintf('blue', 'multi-thres nms note (%s), mean rec:: %.2f\n\n', ...
-            opts.nms.note, mean_recall);
-        save([cache_dir_sub '/' opts.nms.note sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
+        if do_nms_switch
+            % compute recall
+            recall_per_cls = compute_recall_ilsvrc(...
+                [cache_dir_sub '/' opts.nms.note '.mat'], 300, imdb);
+            mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
+            
+            cprintf('blue', 'multi-thres nms note (%s), mean rec:: %.2f\n\n', ...
+                opts.nms.note, mean_recall);
+            save([cache_dir_sub '/' opts.nms.note sprintf('_recall_%.2f.mat', mean_recall)], 'recall_per_cls');
+        end
     end
     
 end

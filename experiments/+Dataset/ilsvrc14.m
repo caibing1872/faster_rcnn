@@ -39,6 +39,10 @@ switch usage
         dataset.roidb_test    = dataset.imdb_test.roidb_func(dataset.imdb_test, ...
             'roidb_name_suffix', roidb_name_suffix);
         
+    case {'test_no_gt'}
+        dataset.imdb_test     = imdb_from_ilsvrc14(root_path, 'val2_no_GT', false);
+        dataset.roidb_test    = dataset.imdb_test.roidb_func(dataset.imdb_test);
+        
     otherwise
         error('usage = ''train14'' or ''test''');
 end
