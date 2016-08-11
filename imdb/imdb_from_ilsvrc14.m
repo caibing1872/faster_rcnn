@@ -47,8 +47,8 @@ catch
     im_path.val2            = fullfile(root_dir, 'ILSVRC2013_DET_val');
     im_path.val2_no_GT      = fullfile(root_dir, 'ILSVRC2013_DET_val');
     
-    im_path.real_test       = fullfile(root_dir, 'ILSVRC2013_DET_test');
-    im_path.val1_14         = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.real_test       = fullfile(root_dir, 'ILSVRC2015_DET_test');
+    im_path.val1_14         = fullfile(root_dir, 'ILSVRC2014_DET_train');
     im_path.val1_13         = fullfile(root_dir, 'ILSVRC2013_DET_val');
     im_path.pos1k_13        = fullfile(root_dir, 'ILSVRC2014_DET_train');
     
@@ -72,7 +72,11 @@ catch
         if exist(imdb.details.image_list_file, 'file')
             fid = fopen(imdb.details.image_list_file, 'r');
             temp = textscan(fid, '%s %d');
-            imdb.image_ids = temp{1};   % cell type
+	    if strcmp(imdb.name, 'ilsvrc14_val1_14') 
+		imdb.image_ids = cellfun(@(x) x(1:end-5), temp{1}, 'uniformoutput', false);
+            else 
+		imdb.image_ids = temp{1}; 
+            end   % cell type
         else
             if strcmp(image_set, 'val2_no_GT')
                 fid1_temp = fopen(fullfile(devkit_path, 'data', 'det_lists', 'val2_original.txt'), 'r');
