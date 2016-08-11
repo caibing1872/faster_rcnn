@@ -104,6 +104,7 @@ dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
     'gpu_id',               opts.gpu_id ...
     );
 
+exit;
 %% step 2, add more proposal here
 name = sprintf('combo_%s', which_dataset);
 FLIP = 'unflip';
