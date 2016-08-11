@@ -46,6 +46,12 @@ catch
     im_path.val1            = fullfile(root_dir, 'ILSVRC2013_DET_val');
     im_path.val2            = fullfile(root_dir, 'ILSVRC2013_DET_val');
     im_path.val2_no_GT      = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    
+    im_path.real_test       = fullfile(root_dir, 'ILSVRC2013_DET_test');
+    im_path.val1_14         = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.val1_13         = fullfile(root_dir, 'ILSVRC2013_DET_val');
+    im_path.pos1k_13        = fullfile(root_dir, 'ILSVRC2014_DET_train');
+    
     devkit_path             = fullfile(root_dir, 'ILSVRC2014_devkit');
     
     meta_det                = load(fullfile(devkit_path, 'data', 'meta_det.mat'));
@@ -55,7 +61,9 @@ catch
     
     if strcmp(image_set, 'val') || strcmp(image_set, 'val1') || ...
             strcmp(image_set, 'val2') || strcmp(image_set, 'test') || ...
-            strcmp(image_set, 'train14') || strcmp(image_set, 'val2_no_GT')
+            strcmp(image_set, 'train14') || strcmp(image_set, 'val2_no_GT') || ...
+            strcmp(image_set, 'real_test') || strcmp(image_set, 'val1_13') || ...
+            strcmp(image_set, 'val1_14') || strcmp(image_set, 'pos1k_13')
         
         imdb.image_dir = im_path.(image_set);
         imdb.details.image_list_file = ...
@@ -95,7 +103,7 @@ catch
         else
             imdb.details.blacklist_file = [];
         end
-        
+        % bbox path case
         if strcmp(image_set, 'val') || strcmp(image_set, 'val1') ...
                 || strcmp(image_set, 'val2') || strcmp(image_set, 'val2_no_GT')
             imdb.details.bbox_path = bbox_path.val;
@@ -148,7 +156,6 @@ catch
         try
             im = imread(imdb.image_at(i));
         catch lasterror
-            % hah, annoying data issues
             if strcmp(lasterror.identifier, 'MATLAB:imagesci:jpg:cmykColorSpace')
                 warning('converting %s from CMYK to RGB', imdb.image_at(i));
                 cmd = ['convert ' imdb.image_at(i) ' -colorspace CMYK -colorspace RGB ' imdb.image_at(i)];

@@ -198,7 +198,13 @@ catch
 end
 
 do_nms_switch = true;
-if strcmp(imdb.name, 'ilsvrc14_val2_no_GT'), do_nms_switch = false; end
+if strcmp(imdb.name, 'ilsvrc14_val2_no_GT') || ...
+        strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
+        strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
+        strcmp(imdb.name, 'ilsvrc14_real_test') || ...
+        strcmp(imdb.name, 'ilsvrc14_pos1k_13')
+    do_nms_switch = false; 
+end
 
 if ~opts.binary
     % ------------------------------------------------------------------------

@@ -144,7 +144,14 @@ if ~opts.skip_rpn_test
         end
         
         if strcmp(imdb.name, 'ilsvrc14_val2_no_GT')
+            
             cprintf('blue', '\nwill not compute recall since there is no GT on (%s)\n', ...
+                imdb.name);
+            
+        elseif strcmp(imdb.name, 'ilsvrc14_val1_13') || strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
+                strcmp(imdb.name, 'ilsvrc14_real_test') || strcmp(imdb.name, 'ilsvrc14_pos1k_13')
+            
+            cprintf('blue', '\nwill not compute recall since I dont prepare GT info on (%s)\n', ...
                 imdb.name);
         else
             % temporarily commented for debug in stage 2
