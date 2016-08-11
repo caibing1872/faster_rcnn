@@ -7,10 +7,10 @@ nms_range = [.8 : -.05 : 0.3];
 % sub_dataset = 'val2';
 % imdb.name = 'ilsvrc14_val2';
 
-%result_name = 'aug_5th_edge';
-%method = 'edgebox';
-result_name = 'aug_5th_ss';
-method = 'selective_search';
+result_name = 'aug_5th_edge';
+method = 'edgebox';
+%result_name = 'aug_5th_ss';
+%method = 'selective_search';
 
 %sub_dataset = 'val1';
 %imdb.name = 'ilsvrc14_val1';
@@ -105,7 +105,8 @@ if strcmp(method, 'edgebox')
             temp(:, 4) = temp(:, 2) + temp(:, 4) - 1;
             aboxes{i} = temp;
         end
-        save(save_name, 'aboxes');
+        save(save_name, 'aboxes', '-v7.3');
+        fprintf('\ndone saving the original boxes (%s)!\n', save_name);
     end
     
 elseif strcmp(method, 'selective_search')
@@ -124,7 +125,7 @@ elseif strcmp(method, 'selective_search')
             temp = temp(:, [2 1 4 3]);
             aboxes{i} = [temp, score];
         end
-        save(save_name, 'aboxes');
+        save(save_name, 'aboxes', '-v7.3');
     end
 end
 
@@ -172,5 +173,5 @@ for i = 1:length(top_k)
             method, top_k(i), 100*mean_recall);
     end
 end
-
+disp('done!');
 exit;
