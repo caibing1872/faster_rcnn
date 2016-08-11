@@ -7,9 +7,12 @@
 clear; close all;
 mkdir_if_missing('./deploy/rescore');
 
-ld = load('/media/DATADISK/hyli/project/faster_rcnn/output/rpn_cachedir/M02_s31_stage1_rpn/ilsvrc14_val2/aboxes_filtered_ilsvrc14_val2_final_NMS_0.7.mat');
+%ld = load('/media/DATADISK/hyli/project/faster_rcnn/output/rpn_cachedir/M02_s31_stage1_rpn/ilsvrc14_val2/aboxes_filtered_ilsvrc14_val2_final_NMS_0.7.mat');
+ld = load('./output/rpn_cachedir/M27_s31_stage1_rpn/ilsvrc14_val2/aboxes_filtered_ilsvrc14_val2_final_NMS_0.55.mat');
 rpn_proposal = ld.aboxes;
-ld = load('/media/DATADISK/hyli/project/faster_rcnn/output/fast_rcnn_cachedir/F05_ls139_nms0_7_top2000_stage1_fast_rcnn/ilsvrc14_val2/final/binary_boxes_ilsvrc14_val2_max_2000_avg_2000.mat');
+%ld = load('/media/DATADISK/hyli/project/faster_rcnn/output/fast_rcnn_cachedir/F05_ls139_nms0_7_top2000_stage1_fast_rcnn/ilsvrc14_val2/final/binary_boxes_ilsvrc14_val2_max_2000_avg_2000.mat');
+% update: we use F09 model here.
+ld = load('./output/fast_rcnn_cachedir/F09_s31_nms0_55_top2000_stage1_fast_rcnn/ilsvrc14_val2/final/binary_boxes_ilsvrc14_val2_max_2000_avg_2000.mat');
 fcn_proposal = ld.boxes;
 % indices of fast-rcnn proposals in the original rpn boxes
 inds = ld.inds;
@@ -20,10 +23,13 @@ assert(length(fcn_proposal{1}) == length(rpn_proposal{1}));
 new_fcn_boxes = cell(length(fcn_proposal), 1);
 new_fcn_boxes_2 = cell(length(fcn_proposal), 1);
 
-for i = 622:length(new_fcn_boxes)
+for i = 1:length(new_fcn_boxes)
     % per image
+    % the index in inds includes GT, so deduct them first
     gt_num = min(inds{i})-1;
     rpn_score = rpn_proposal{i}( (inds{i}-gt_num), 5 );
+    assert(length(fcn_proposal{i}(:, 5)) == length(rpn_score));
+    
     [new_score, new_ind] = sort(fcn_proposal{i}(:, 5) .* rpn_score, 'descend');
     new_fcn_boxes{i} = [fcn_proposal{i}(new_ind, 1:4) new_score];
     
@@ -42,12 +48,16 @@ for i = 1:length(nms_overlap_thres)
     aboxes_add = boxes_filter_inline(...
         new_fcn_boxes_2, -1, nms_overlap_thres(i), 2000, true);
     
+    aboxes = [];
+    aboxes = aboxes_mult;
     save(['./deploy/rescore/' ...
         sprintf('rescore_boxes_mult_nms_%.2f.mat', nms_overlap_thres(i))], ...
-        'aboxes_mult');
+        'aboxes');
+    aboxes = [];
+    aboxes = aboxes_add;
     save(['./deploy/rescore/' ...
         sprintf('rescore_boxes_add_nms_%.2f.mat', nms_overlap_thres(i))], ...
-        'aboxes_add');
+        'aboxes');
     
     % mult
     recall_per_cls = compute_recall_ilsvrc(...

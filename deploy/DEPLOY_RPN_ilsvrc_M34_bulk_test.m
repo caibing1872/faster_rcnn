@@ -11,7 +11,7 @@ run('./startup');
 % ======================= USER DEFINE =======================
 
 % cache base
-cache_base_proposal = 'NEW_ILSVRC_ls139';
+cache_base_proposal = 'M34_s31';
 gpu_id = 0;
 test_proto_name = 'test_9anchor';
 train_key = 'train14';
@@ -20,8 +20,8 @@ train_key = 'train14';
 model = Model.VGG16_for_Faster_RCNN('solver_10w30w_ilsvrc_9anchor', test_proto_name);
 model = Faster_RCNN_Train.set_cache_folder(cache_base_proposal, '', model);
 % ----------------------------------------------
-model.stage1_rpn.nms.note = '0.7';   % must be a string
-model.stage1_rpn.nms.nms_overlap_thres = [0.7, 0.65, 0.6, 0.55, 0.5];
+model.stage1_rpn.nms.note = '0.75';   % must be a string
+model.stage1_rpn.nms.nms_overlap_thres = [0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45];
 % ==========================================================
 
 caffe.reset_all();
@@ -49,7 +49,8 @@ if strcmp(caffemodel_dir(1).name, 'final.caffemodel')
     
     fprintf('\nComputing final model ...\n');
     RPN_TEST_ilsvrc_hyli(train_key, 'final', ...
-        model, dataset.imdb_test, dataset.roidb_test, conf_proposal, 'update_roi', false);
+        model, dataset.imdb_test, dataset.roidb_test, ...
+        conf_proposal, 'update_roi', false);
     caffemodel_dir = caffemodel_dir(2:end);
 end
 
@@ -62,7 +63,8 @@ for i = 1:length(list_descend)
     iter_name = ['iter_' num2str(list_descend(i))];
     fprintf('\nComputing %s model ...\n', iter_name);
     RPN_TEST_ilsvrc_hyli(train_key, iter_name, ...
-        model, dataset, conf_proposal, 'update_roi', false);
+        model, dataset.imdb_test, dataset.roidb_test, ...
+        conf_proposal, 'update_roi', false);
 end
 
 exit;
