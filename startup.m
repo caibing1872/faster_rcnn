@@ -33,6 +33,6 @@ function startup()
     mkdir_if_missing(fullfile(curdir, 'output'));
 
     mkdir_if_missing(fullfile(curdir, 'models'));
-
+    clc;
     fprintf('fast_rcnn startup done\n');
 end
