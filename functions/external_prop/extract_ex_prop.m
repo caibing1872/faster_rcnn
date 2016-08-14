@@ -12,11 +12,11 @@ nms_range = [.8 : -.05 : 0.3];
 %imdb.name = 'ilsvrc14_train14';
 
 %sub_dataset = 'real_test';
-sub_dataset = 'val1_14';
-%sub_dataset = 'val1_13';
+%sub_dataset = 'val1_14';
+sub_dataset = 'val1_13';
 %sub_dataset = 'pos1k_13';
-%result_name = 'edgebox';
-result_name = 'ss';
+result_name = 'edgebox';
+%result_name = 'ss';
 %result_name = 'attractioNet';
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
@@ -27,6 +27,7 @@ method = result_name;
 %% config
 addpath(genpath('./functions/external_prop'));
 mkdir_if_missing(['./box_proposals/' sub_dataset '/']);
+mkdir_if_missing(['./box_proposals/' sub_dataset '/' result_name]);
 save_name = ['./box_proposals/' sub_dataset '/' result_name '/boxes_right_format.mat'];
 
 switch imdb.name
