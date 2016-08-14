@@ -1,30 +1,32 @@
 clear; close all;
 nms_range = [.8 : -.05 : 0.3];
-% result_name = 'aug_1st_edge';
-% method = 'edgebox';
-% result_name = 'aug_1st_ss_score';
-% method = 'selective_search';
-% sub_dataset = 'val2';
-% imdb.name = 'ilsvrc14_val2';
 
-result_name = 'aug_5th_edge';
-method = 'edgebox';
+%result_name = 'aug_5th_edge';
+%method = 'edgebox';
 %result_name = 'aug_5th_ss';
 %method = 'selective_search';
 
 %sub_dataset = 'val1';
 %imdb.name = 'ilsvrc14_val1';
-sub_dataset = 'train14';
-imdb.name = 'ilsvrc14_train14';
+%sub_dataset = 'train14';
+%imdb.name = 'ilsvrc14_train14';
 
+%sub_dataset = 'real_test';
+sub_dataset = 'val1_14';
+%sub_dataset = 'val1_13';
+%sub_dataset = 'pos1k_13';
+%result_name = 'edgebox';
+result_name = 'ss';
+%result_name = 'attractioNet';
+
+imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
 % note: we don't differentiate top_k when saving them
 % top_k = [300, 500, 1000, 2000];
 top_k = 300;
-
+method = result_name;
 %% config
 addpath(genpath('./functions/external_prop'));
-result_path = './box_proposals/val2';
-mkdir_if_missing(['./box_proposals/' sub_dataset '/' result_name]);
+mkdir_if_missing(['./box_proposals/' sub_dataset '/']);
 save_name = ['./box_proposals/' sub_dataset '/' result_name '/boxes_right_format.mat'];
 
 switch imdb.name
@@ -64,6 +66,45 @@ switch imdb.name
         temp = textscan(fid, '%s%s');
         test_im_list = temp{1}; clear temp;
         im_path = [root_folder '/../ILSVRC2013_DET_val'];
+        extension = '.JPEG';
+        imdb.flip = false;
+    
+        
+    % the following datasets wont compute recall since I am just too lazy
+    % to collect their GT info.
+    case 'ilsvrc14_val1_14'
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/val1_14.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2014_DET_train'];
+        extension = '';
+        imdb.flip = false;
+        
+    case 'ilsvrc14_val1_13'
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/val1_13.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2013_DET_val'];
+        extension = '.JPEG';
+        imdb.flip = false;
+        
+    case 'ilsvrc14_real_test'
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/real_test.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2015_DET_test'];
+        extension = '.JPEG';
+        imdb.flip = false;
+        
+    case 'ilsvrc14_pos1k_13'
+        root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
+        fid = fopen([root_folder '/data/det_lists/pos1k_13.txt'], 'r');
+        temp = textscan(fid, '%s%s');
+        test_im_list = temp{1}; clear temp;
+        im_path = [root_folder '/../ILSVRC2014_DET_train'];
         extension = '.JPEG';
         imdb.flip = false;
 end
@@ -109,7 +150,7 @@ if strcmp(method, 'edgebox')
         fprintf('\ndone saving the original boxes (%s)!\n', save_name);
     end
     
-elseif strcmp(method, 'selective_search')
+elseif strcmp(method, 'ss')
     
     if ~exist(save_name, 'file')
         aboxes = cell(length(test_im_list), 1);
@@ -128,20 +169,6 @@ elseif strcmp(method, 'selective_search')
         save(save_name, 'aboxes', '-v7.3');
     end
 end
-
-% % almost deprecated below
-% if update_edge_format
-%
-%     load(save_name);
-%     aboxes = cellfun(@change_edgebox, aboxes, 'uniformoutput', false);
-%     save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
-% end
-% if update_ss_format
-%
-%     load(save_name);
-%     aboxes = cellfun(@(x) x(:, [2 1 4 3]), aboxes, 'uniformoutput', false);
-%     save([save_name(1:end-4) '_right_format.mat'], 'aboxes');
-% end
 
 %% compute recall
 for i = 1:length(top_k)
