@@ -189,9 +189,12 @@ for i = 1:length(top_k)
             
             recall_per_cls = compute_recall_ilsvrc(...
                 [save_name(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
-            mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-            cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
-                method, top_k(i), nms_range(j), 100*mean_recall);
+            
+            if recall_per_cls > 0
+            	mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+           	cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
+               		method, top_k(i), nms_range(j), 100*mean_recall);
+            end
         end
     else
         % no nms
