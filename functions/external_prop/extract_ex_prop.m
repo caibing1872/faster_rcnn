@@ -12,11 +12,11 @@ nms_range = [.8 : -.05 : 0.3];
 %imdb.name = 'ilsvrc14_train14';
 
 %sub_dataset = 'real_test';
-%sub_dataset = 'val1_14';
-sub_dataset = 'val1_13';
+sub_dataset = 'val1_14';
+%sub_dataset = 'val1_13';
 %sub_dataset = 'pos1k_13';
-result_name = 'edgebox';
-%result_name = 'ss';
+%result_name = 'edgebox';
+result_name = 'ss';
 %result_name = 'attractioNet';
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
@@ -133,7 +133,7 @@ if strcmp(method, 'edgebox')
         opts.beta  = .75;     % nms threshold for object proposals
         opts.minScore = .01;  % min score of boxes to detect
         opts.maxBoxes = 1e4;  % max number of boxes to detect
-        
+        fuck_box_log = [];
         for i = 1:length(test_im_list)
             if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
                 fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
@@ -141,11 +141,16 @@ if strcmp(method, 'edgebox')
             end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
-            temp = edgeBoxes(im, model, opts);
-            % [x, y, w, h, score]
-            temp(:, 3) = temp(:, 1) + temp(:, 3) - 1;
-            temp(:, 4) = temp(:, 2) + temp(:, 4) - 1;
-            aboxes{i} = temp;
+	    try
+            	temp = edgeBoxes(im, model, opts);
+            	% [x, y, w, h, score]
+            	temp(:, 3) = temp(:, 1) + temp(:, 3) - 1;
+            	temp(:, 4) = temp(:, 2) + temp(:, 4) - 1;
+            	aboxes{i} = temp;
+	    catch
+		aboxes{i} = [];
+	        fuck_box_log = [fuck_box_log; test_im_list{i}];
+	    end
         end
         save(save_name, 'aboxes', '-v7.3');
         fprintf('\ndone saving the original boxes (%s)!\n', save_name);
@@ -155,6 +160,7 @@ elseif strcmp(method, 'ss')
     
     if ~exist(save_name, 'file')
         aboxes = cell(length(test_im_list), 1);
+	fuck_box_log = [];
         for i = 1:length(test_im_list)
             if i == 1 || i == length(test_im_list) || mod(i, 1000) == 0
                 fprintf('extract box, method: %s, dataset: %s, (%d/%d)...\n', ...
@@ -162,12 +168,18 @@ elseif strcmp(method, 'ss')
             end
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
-            [temp, score] = selective_search_boxes(im);
-            % [y1 x1 y2 x2]
-            temp = temp(:, [2 1 4 3]);
-            aboxes{i} = [temp, score];
+            try
+	    	[temp, score] = selective_search_boxes(im);
+            	% [y1 x1 y2 x2]
+            	temp = temp(:, [2 1 4 3]);
+            	aboxes{i} = [temp, score];
+	    catch
+		aboxes{i} = [];
+                fuck_box_log = [fuck_box_log; test_im_list{i}];
+	    end
         end
-        save(save_name, 'aboxes', '-v7.3');
+        save(save_name, 'aboxes', 'fuck_box_log', '-v7.3');
+ 	fprintf('\ndone saving the original boxes (%s)!\n', save_name);
     end
 end
 
