@@ -8,8 +8,8 @@ sub_dataset = 'pos1k_13';
 
 %result_name = 'edgebox';
 result_name = 'ss';
-fucking_start_im = 125001;
-%fucking_end_im = length(test_im_list);
+fucking_start_im = 102060;
+%fucking_end_im = 125000; %length(test_im_list);
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
 % note: we don't differentiate top_k when saving them
@@ -125,41 +125,48 @@ if strcmp(method, 'edgebox')
     opts.minScore = .01;  % min score of boxes to detect
     opts.maxBoxes = 1e4;  % max number of boxes to detect
     
-    for i = fucking_start_im : fucking_end_im
-        if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
-            fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d)...\n', ...
-                method, sub_dataset, i, fucking_start_im, fucking_end_im);
-        end
+    parfor i = fucking_start_im : fucking_end_im
+%         if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
+%             fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d)...\n', ...
+%                 method, sub_dataset, i, fucking_start_im, fucking_end_im);
+%         end
         if ~exist([save_name '/' test_im_list{i}(11:end) '.mat'], 'file')
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
-            temp = edgeBoxes(im, model, opts);
+            boxes_edge = edgeBoxes(im, model, opts);
             % [x, y, w, h, score]
-            temp(:, 3) = temp(:, 1) + temp(:, 3) - 1;
-            temp(:, 4) = temp(:, 2) + temp(:, 4) - 1;
-            boxes = temp;
-            save([save_name '/' test_im_list{i}(11:end) '.mat'], 'boxes');
+            boxes_edge(:, 3) = boxes_edge(:, 1) + boxes_edge(:, 3) - 1;
+            boxes_edge(:, 4) = boxes_edge(:, 2) + boxes_edge(:, 4) - 1;
+            parsave([save_name '/' test_im_list{i}(11:end) '.mat'], boxes_edge);
         end
     end
     
 elseif strcmp(method, 'ss')
     
-    for i = fucking_start_im : fucking_end_im
-        if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
-            fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d), total: (%d) ...\n', ...
-                method, sub_dataset, i, fucking_start_im, fucking_end_im, length(test_im_list));
-        end
+    parfor i = fucking_start_im : fucking_end_im
+%         if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
+%             fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d), total: (%d) ...\n', ...
+%                 method, sub_dataset, i, fucking_start_im, fucking_end_im, length(test_im_list));
+%         end
         if ~exist([save_name '/' test_im_list{i}(11:end) '.mat'], 'file')
-            im = imread([im_path '/' test_im_list{i} extension]);
+%             if i == 102065 || i == 102087
+%                 boxes = [];
+%                 save([save_name '/' test_im_list{i}(11:end) '.mat'], 'boxes');
+%                 continue;
+%             end          
+            im = imread([im_path '/' test_im_list{i} extension]);            
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
-            [temp, score] = selective_search_boxes(im);
-            % [y1 x1 y2 x2]
-            temp = temp(:, [2 1 4 3]);
-            boxes = [temp, score];
-            save([save_name '/' test_im_list{i}(11:end) '.mat'], 'boxes');
+            try
+                [temp, score] = selective_search_boxes(im);
+                % [y1 x1 y2 x2]
+                temp = temp(:, [2 1 4 3]);
+                boxes_ss = [temp, score];
+            catch
+                boxes_ss = [];
+            end
+            parsave([save_name '/' test_im_list{i}(11:end) '.mat'], boxes_ss);
         end
     end
-    
 end
 
 %% compute recall
