@@ -8,8 +8,8 @@ sub_dataset = 'pos1k_13';
 
 %result_name = 'edgebox';
 result_name = 'ss';
-fucking_start_im = 125001;
-%fucking_end_im = length(test_im_list);
+fucking_start_im = 50001;
+fucking_end_im = 75000; %length(test_im_list);
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
 % note: we don't differentiate top_k when saving them
@@ -151,11 +151,18 @@ elseif strcmp(method, 'ss')
         end
         if ~exist([save_name '/' test_im_list{i}(11:end) '.mat'], 'file')
             im = imread([im_path '/' test_im_list{i} extension]);
-            if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
-            [temp, score] = selective_search_boxes(im);
-            % [y1 x1 y2 x2]
-            temp = temp(:, [2 1 4 3]);
-            boxes = [temp, score];
+            
+	    if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
+	    if size(im, 1) * size(im, 2) <= 4, fprintf('\n %d, %s \n', i, test_im_list{i}); keyboard; end
+            try
+	    	[temp, score] = selective_search_boxes(im);
+            	% [y1 x1 y2 x2]
+            	temp = temp(:, [2 1 4 3]);
+            	boxes = [temp, score];
+	    catch
+		fprintf('\n %d, %s \n', i, test_im_list{i});
+		boxes = [];
+	    end
             save([save_name '/' test_im_list{i}(11:end) '.mat'], 'boxes');
         end
     end
