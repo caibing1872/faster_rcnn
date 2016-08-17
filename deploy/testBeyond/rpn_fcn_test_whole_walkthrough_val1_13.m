@@ -1,5 +1,5 @@
 % RPN and FCN test and combine them with multiple boxes on ilsvrc
-% 
+%
 % saved separately in each image and will transfer to Kun Wang
 % refactor by hyli on August 11, 2016
 % ---------------------------------------------------------
@@ -13,7 +13,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 % ======================= USER DEFINE =======================
 % change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
-opts.gpu_id = 0;            % single-gpu version, index from 0
+opts.gpu_id = 1;            % single-gpu version, index from 0
 
 % all 'test' model, so dont be surprised that initial roidb are zeros!
 % which means there's no GT in these fucking datasets.
@@ -31,6 +31,8 @@ for i = 1:3
         which_dataset, external_box_list{i});
     
     % TODO: check file exist. assert('');
+    assert(exist(load_name{i}, 'file')==2, ...
+        sprintf('fuck! file does not exist! (%s)', load_name{i}));
 end
 dataset = [];
 dataset = Dataset.ilsvrc14(dataset, which_dataset, false, root_path);
@@ -57,9 +59,9 @@ fast_nms_overlap_thres      = 0.65;
 cache_base_RPN              = 'M02_s31';
 skip_rpn_test               = false;
 update_roi                  = true;
-update_roi_name             = which_dataset;
+update_roi_name             = 'rpn';
 detect_exist_config_file    = true;
-model.stage1_rpn.nms.note   = '0.6';   
+model.stage1_rpn.nms.note   = '0.6';
 model.stage1_rpn.nms.nms_overlap_thres = 0.6;
 % ==========================================================
 % ==========================================================
@@ -104,17 +106,16 @@ dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
     'gpu_id',               opts.gpu_id ...
     );
 
-exit;
 %% step 2, add more proposal here
-name = sprintf('combo_%s', which_dataset);
+name = sprintf('comboALL');
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
 test_sub_folder_suffix = 'F15c';
 keep_raw = true;
 
-cprintf('blue', 'append external boxes to newly-generated roidb...\n');
 if ~exist(new_roidb_file, 'file')
+    cprintf('blue', 'append external boxes to newly-generated roidb...\n');
     for i = 1:length(load_name)
         ld = load(load_name{i});
         try aboxes = ld.aboxes; catch, aboxes = ld.boxes_uncut; end
@@ -124,15 +125,20 @@ if ~exist(new_roidb_file, 'file')
         % update roidb in 'imdb' folder
         roidb_from_proposal(dataset.imdb_test, dataset.roidb_test, ...
             roidb_regions, 'keep_raw_proposal', keep_raw, 'mat_file', new_roidb_file);
+        % update the roidb in matlab dynamically
+        ld = load(new_roidb_file);
+        dataset.roidb_test.rois = ld.rois;
     end
+else
+    cprintf('blue', 'directly load all (%d + rpn) results...\n', length(load_name));
+    ld = load(new_roidb_file);
+    dataset.roidb_test.rois = ld.rois;
 end
-ld = load(new_roidb_file);
-dataset.roidb_test.rois = ld.rois;
 
 %% step 3, merge all result and get FCN output
 cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
 % if adding more proposals, you need to increase the number here
-test_max_per_image          = 15000; 
+test_max_per_image          = 30000;
 test_avg_per_image          = test_max_per_image;
 
 fast_rcnn_test(conf_fast_rcnn, dataset.imdb_test, dataset.roidb_test, ...

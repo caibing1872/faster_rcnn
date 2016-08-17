@@ -51,15 +51,17 @@ for i = 1 : ceil(length(rois)/chunk)
     % init empty structure called temp
     temp = struct('gt', [], 'overlap', [], 'boxes', [], 'class', []);
     temp(sub_length).gt = [];
-    for kk = 1:sub_length
-    %parfor kk = 1:sub_length
+    %for kk = 1:sub_length
+    parfor kk = 1:sub_length
         % 'kk' is relative index
         abs_ind = kk + (i-1)*chunk;
         [~, image_name1] = fileparts(image_ids_{abs_ind});
         [~, image_name2] = fileparts(images_{abs_ind});
         assert(strcmp(image_name1, image_name2));
         
-        boxes = boxes_{abs_ind}(:, 1:4);     
+        % in some cases, external boxes don't provide boxes (=[]) and we
+        % will skip this instance.
+        try boxes = boxes_{abs_ind}(:, 1:4); catch, boxes = []; end   
         gt_boxes = rois(abs_ind).boxes(rois(abs_ind).gt, :);
         gt_classes = rois(abs_ind).class(rois(abs_ind).gt, :);
         all_boxes = cat(1, rois(abs_ind).boxes, boxes);
