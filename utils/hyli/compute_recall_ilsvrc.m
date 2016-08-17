@@ -40,7 +40,7 @@ switch imdb.name
         
     otherwise
         warning('no GT info in dataset (%s), skip computing recall\n\n', imdb.name);
-        return;
+        recall_per_cls = 0; return;
 end
 temp = textscan(fid, '%s%s');
 test_im_list = temp{1};

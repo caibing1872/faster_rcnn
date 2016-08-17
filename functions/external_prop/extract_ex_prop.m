@@ -15,8 +15,8 @@ nms_range = [.8 : -.05 : 0.3];
 %sub_dataset = 'val1_14';
 %sub_dataset = 'val1_13';
 sub_dataset = 'pos1k_13';
-%result_name = 'edgebox';
-result_name = 'ss';
+result_name = 'edgebox';
+%result_name = 'ss';
 %result_name = 'attractioNet';
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
@@ -27,6 +27,7 @@ method = result_name;
 %% config
 addpath(genpath('./functions/external_prop'));
 mkdir_if_missing(['./box_proposals/' sub_dataset '/']);
+mkdir_if_missing(['./box_proposals/' sub_dataset '/' result_name]);
 save_name = ['./box_proposals/' sub_dataset '/' result_name '/boxes_right_format.mat'];
 
 switch imdb.name
@@ -188,9 +189,12 @@ for i = 1:length(top_k)
             
             recall_per_cls = compute_recall_ilsvrc(...
                 [save_name(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
-            mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-            cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
-                method, top_k(i), nms_range(j), 100*mean_recall);
+            
+	    if recall_per_cls > 0
+   	    	mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+            	cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
+                	method, top_k(i), nms_range(j), 100*mean_recall);
+	    end
         end
     else
         % no nms
