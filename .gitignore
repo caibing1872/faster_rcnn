@@ -27,6 +27,8 @@ external/caffe/models/*
 *lmdb
 *.out
 
+functions/external_prop/edgebox/third-party-toolbox
+
 # build, distribute, and bins (+ python proto bindings)
 external/caffe/build
 external/caffe/.build_debug/*
