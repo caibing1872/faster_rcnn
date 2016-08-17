@@ -6,6 +6,7 @@ function mAP = fast_rcnn_test(conf, imdb, roidb, varargin)
 % Copyright (c) 2015, Shaoqing Ren
 % Licensed under The MIT License [see LICENSE for details]
 % --------------------------------------------------------
+mAP = 0;
 caffe.reset_all();
 %% inputs
 ip = inputParser;
@@ -233,7 +234,8 @@ if ~opts.binary
     end
 else
     %% NMS step
-    raw_aboxes = abox150;2prtes{1};
+    % binary class, we only extract the 'foreground' class
+    raw_aboxes = aboxes{1}; clear aboxes;
     if isempty(opts.nms)
         % normal nms
         best_recall = 0;
@@ -241,7 +243,9 @@ else
             
             temp = save_after_nms(1, nms_overlap_thres(i), after_nms_topN);
             if exist(temp, 'file')
-                disp('nms result exist. compute recall directly ...');
+                disp('nms result exist. split result (and compute recall) directly ...');
+                ld = load(temp);
+                aboxes = ld.aboxes; clear ld;
             else
                 aboxes = boxes_filter_inline(raw_aboxes, ...
                     per_nms_topN, ...               % -1
@@ -250,10 +254,20 @@ else
                 save(temp, 'aboxes');
             end
             
+            %% =========================
+            % make the split result here
+            cprintf('blue', 'split the results...\n');
+            split_path = [fileparts(temp) '/split'];
+            mkdir_if_missing(split_path);
+            assert(length(imdb.image_ids) == length(aboxes));
+            for shit = 1:length(imdb.image_ids)
+                boxes = aboxes{shit};
+                save([split_path '/' imdb.image_ids{shit} '.mat'], 'boxes');
+            end           
+            %% =========================
             if compute_recall_switch
                 % compute recall
-                recall_per_cls = compute_recall_ilsvrc(...
-                    save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
+                recall_per_cls = compute_recall_ilsvrc(temp, 300, imdb);
                 mean_recall = 100*mean(extractfield(recall_per_cls, 'recall'));
                 
                 cprintf('blue', 'nms (thres: %.2f, topN: %d), mean rec:: %.2f\n\n', ...
