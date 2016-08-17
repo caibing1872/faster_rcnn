@@ -197,13 +197,13 @@ catch
     rng(prev_rng);
 end
 
-do_nms_switch = true;
+compute_recall_switch = true;
 if strcmp(imdb.name, 'ilsvrc14_val2_no_GT') || ...
         strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
         strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
         strcmp(imdb.name, 'ilsvrc14_real_test') || ...
         strcmp(imdb.name, 'ilsvrc14_pos1k_13')
-    do_nms_switch = false; 
+    compute_recall_switch = false; 
 end
 
 if ~opts.binary
@@ -233,7 +233,7 @@ if ~opts.binary
     end
 else
     %% NMS step
-    raw_aboxes = aboxes{1};
+    raw_aboxes = abox150;2prtes{1};
     if isempty(opts.nms)
         % normal nms
         best_recall = 0;
@@ -250,7 +250,7 @@ else
                 save(temp, 'aboxes');
             end
             
-            if do_nms_switch
+            if compute_recall_switch
                 % compute recall
                 recall_per_cls = compute_recall_ilsvrc(...
                     save_after_nms(1, nms_overlap_thres(i), after_nms_topN), 300, imdb);
@@ -276,7 +276,7 @@ else
                 'max_per_image',    opts.nms.max_per_image);
         end
         save([cache_dir_sub '/' opts.nms.note '.mat'], 'aboxes', '-v7.3');
-        if do_nms_switch
+        if compute_recall_switch
             % compute recall
             recall_per_cls = compute_recall_ilsvrc(...
                 [cache_dir_sub '/' opts.nms.note '.mat'], 300, imdb);
