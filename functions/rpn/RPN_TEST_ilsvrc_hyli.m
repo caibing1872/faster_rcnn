@@ -19,9 +19,9 @@ ip.addRequired('conf_proposal',                             @isstruct);
 % by default all test programs use GPU=0
 ip.addParameter('mult_thr_nms',         false,              @islogical);
 ip.addParameter('nms_iou_thrs',         [0.95, 0.90, 0.85, 0.80, 0.75, 0.65, 0.60, 0.55],  ...
-                                                            @isnumeric);
+    @isnumeric);
 ip.addParameter('max_per_image',        [2000, 1000,  400,  200,  100,   40,   20,   10],  ...
-                                                            @isnumeric);
+    @isnumeric);
 ip.addParameter('gpu_id',               0,                  @isscalar);
 ip.addParameter('update_roi',           false,              @islogical);
 ip.addParameter('skip_rpn_test',        false,              @islogical);
@@ -50,7 +50,7 @@ suffix = ['_' iter_name];
 
 %% compute recall
 if isnan(str2double(model.stage1_rpn.nms.note))
-    % multi-thres NMS
+    % multi-thres NMS, or 'default' setting (will be deprecated in the future)
     detect_name = {model.stage1_rpn.nms.note};
 else
     detect_name = arrayfun(@(x) num2str(x), ...
@@ -81,6 +81,9 @@ if ~opts.skip_rpn_test
             disp(nms);
             output_model_file = fullfile(pwd, 'output', 'rpn_cachedir', ...
                 model.stage1_rpn.cache_name, test_file, [iter_name '.caffemodel']);
+            if ~exist(output_model_file, 'file')
+                cprintf('blue', 'trained caffemodel does not exit! %s', output_model_file);
+            end
             
             % update: if opts.update_roi is set true, skip this and do NMS within
             % the proposal_test procedure, hopefully save memory!
@@ -100,9 +103,9 @@ if ~opts.skip_rpn_test
                             'net_file',         output_model_file, ...
                             'cache_name',       model.stage1_rpn.cache_name, ...
                             'suffix',           suffix);
-                        if ~isempty(opts.save_intermediate_box), 
+                        if ~isempty(opts.save_intermediate_box),
                             save(opts.save_intermediate_box, 'raw_aboxes'); end
-                    end             
+                    end
                     % only execute once
                     forward_flag = true;
                 end
@@ -140,16 +143,28 @@ if ~opts.skip_rpn_test
             save(test_box_full_name, 'aboxes', '-v7.3');
         end
         
-        % temporarily commented for debug in stage 2
-        % 2. compute recall
-        recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
-        mean_recall = mean(extractfield(recall_per_cls, 'recall'));
-        fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
-        
-        % 3. save the detailed recall file
-        save(fullfile(cache_dir, ['recall_' imdb.name suffix ...
-            sprintf('_%.2f_NMS_%s.mat', 100*mean_recall, detect_name{i})]), ...
-            'recall_per_cls');
+        if strcmp(imdb.name, 'ilsvrc14_val2_no_GT')
+            
+            cprintf('blue', '\nwill not compute recall since there is no GT on (%s)\n', ...
+                imdb.name);
+            
+        elseif strcmp(imdb.name, 'ilsvrc14_val1_13') || strcmp(imdb.name, 'ilsvrc14_val1_14') || ...
+                strcmp(imdb.name, 'ilsvrc14_real_test') || strcmp(imdb.name, 'ilsvrc14_pos1k_13')
+            
+            cprintf('blue', '\nwill not compute recall since I dont prepare GT info on (%s)\n', ...
+                imdb.name);
+        else
+            % temporarily commented for debug in stage 2
+            % 2. compute recall
+            recall_per_cls = compute_recall_ilsvrc(test_box_full_name, 300, imdb);
+            mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+            fprintf('model:: %s, (nms) %s, mean rec:: %.2f\n\n', iter_name, detect_name{i}, 100*mean_recall);
+            
+            % 3. save the detailed recall file
+            save(fullfile(cache_dir, ['recall_' imdb.name suffix ...
+                sprintf('_%.2f_NMS_%s.mat', 100*mean_recall, detect_name{i})]), ...
+                'recall_per_cls');
+        end
     end
 end
 

@@ -1,0 +1,161 @@
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1363, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1363, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.80, mult), mean rec:: 89.69
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.80, add), mean rec:: 89.49
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1347, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1347, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.75, mult), mean rec:: 89.67
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.75, add), mean rec:: 89.49
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1319, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1319, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.70, mult), mean rec:: 89.69
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.70, add), mean rec:: 89.56
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1266, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1266, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.65, mult), mean rec:: 89.65
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.65, add), mean rec:: 89.45
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1164, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 1165, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.60, mult), mean rec:: 89.43
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.60, add), mean rec:: 89.22
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 988, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 989, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.55, mult), mean rec:: 88.91
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.55, add), mean rec:: 88.64
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 790, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 791, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.50, mult), mean rec:: 87.64
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.50, add), mean rec:: 87.57
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 631, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 631, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.45, mult), mean rec:: 86.12
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.45, add), mean rec:: 85.82
+
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 508, select top 2000
+do nms during test, taking quite a while (brew some coffe or take a walk!:)...
+aver_boxes_num = 508, select top 2000
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.40, mult), mean rec:: 83.74
+
+compute recall: (1/9240)
+compute recall: (3000/9240)
+compute recall: (6000/9240)
+compute recall: (9000/9240)
+compute recall: (9240/9240)
+nms (thres: 0.40, add), mean rec:: 83.35

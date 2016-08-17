@@ -37,6 +37,10 @@ switch imdb.name
         fid = fopen([dataset_root '/data/det_lists/train14.txt'], 'r');
         if imdb.flip, proposals = proposals(1:2:end); end
         annopath = [dataset_root '/../ILSVRC2014_DET_bbox_train/'];
+        
+    otherwise
+        warning('no GT info in dataset (%s), skip computing recall\n\n', imdb.name);
+        recall_per_cls = 0; return;
 end
 temp = textscan(fid, '%s%s');
 test_im_list = temp{1};

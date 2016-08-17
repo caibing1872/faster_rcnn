@@ -38,7 +38,7 @@ if flip == false
     if ~isempty(opts.roidb_name_suffix)
         cache_file = [cache_file '_' opts.roidb_name_suffix '.mat'];
         try
-            %disp(cache_file); 
+            % disp(cache_file); 
             load(cache_file);
             roidb.rois = rois;
             roidb.name = imdb.name;
@@ -87,13 +87,13 @@ catch
         
         for i = 1:length(imdb.image_ids)
             
-            tic_toc_print('roidb (%s): %d/%d\n', roidb.name, i, length(imdb.image_ids));
-            anno_file = fullfile(imdb.details.bbox_path, [imdb.image_ids{i} '.xml']);
-            
+            tic_toc_print('roidb (%s): %d/%d\n', roidb.name, i, length(imdb.image_ids));     
             try
+                anno_file = fullfile(imdb.details.bbox_path, [imdb.image_ids{i} '.xml']);
                 rec = VOCreadrecxml(anno_file, hash);
             catch
-                error('GT(xml) file empty/broken: %s\n', imdb.image_ids{i});
+                warning('GT(xml) file empty/broken: %s\n', imdb.image_ids{i});
+                rec = [];
             end
             if ~isempty(regions)
                 [~, image_name1] = fileparts(imdb.image_ids{i});
@@ -106,13 +106,13 @@ catch
         % flip case
         for i = 1:length(imdb.image_ids)/2
             
-            tic_toc_print('roidb (%s): %d/%d\n', roidb.name, i, length(imdb.image_ids)/2);
-            anno_file = fullfile(imdb.details.bbox_path, [imdb.image_ids{2*i-1} '.xml']);
-            
+            tic_toc_print('roidb (%s): %d/%d\n', roidb.name, i, length(imdb.image_ids)/2);        
             try
+                anno_file = fullfile(imdb.details.bbox_path, [imdb.image_ids{2*i-1} '.xml']);
                 rec = VOCreadrecxml(anno_file, hash);
             catch
-                error('GT(xml) file empty/broken: %s\n', imdb.image_ids{2*i-1});
+                warning('GT(xml) file empty/broken: %s\n', imdb.image_ids{2*i-1});
+                rec = [];
             end
             if ~isempty(regions)
                 [~, image_name1] = fileparts(imdb.image_ids{i*2-1});

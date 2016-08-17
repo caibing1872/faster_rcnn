@@ -17,6 +17,7 @@ external/caffe_try
 external/caffe_temp
 external/CaffeMex
 box_proposals/
+functions/external_prop/edgebox/third-party-toolbox
 
 external/caffe/data/*
 external/caffe/models/*
