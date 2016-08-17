@@ -13,7 +13,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 % ======================= USER DEFINE =======================
 % change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
-opts.gpu_id = 3;            % single-gpu version, index from 0
+opts.gpu_id = 0;            % single-gpu version, index from 0
 
 % all 'test' model, so dont be surprised that initial roidb are zeros!
 % which means there's no GT in these fucking datasets.
@@ -28,9 +28,10 @@ external_box_list{3} = 'attract_nms0_65';
 load_name = cell(length(external_box_list), 1);
 for i = 1:3
     load_name{i} = sprintf('./box_proposals/%s/boxes_%s.mat', ...
-        which_dataset, external_box_list{i});
-    
+        which_dataset, external_box_list{i});   
     % TODO: check file exist. assert('');
+    assert(exist(load_name{i}, 'file')==2, ...
+        sprintf('fuck! file does not exist! (%s)', load_name{i}));
 end
 dataset = [];
 dataset = Dataset.ilsvrc14(dataset, which_dataset, false, root_path);
@@ -57,7 +58,7 @@ fast_nms_overlap_thres      = 0.65;
 cache_base_RPN              = 'M02_s31';
 skip_rpn_test               = false;
 update_roi                  = true;
-update_roi_name             = which_dataset;
+update_roi_name             = 'rpn';    % change here in new version
 detect_exist_config_file    = true;
 model.stage1_rpn.nms.note   = '0.6';   
 model.stage1_rpn.nms.nms_overlap_thres = 0.6;
@@ -104,9 +105,8 @@ dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
     'gpu_id',               opts.gpu_id ...
     );
 
-exit;
 %% step 2, add more proposal here
-name = sprintf('combo_%s', which_dataset);
+name = sprintf('combo_ALL');
 FLIP = 'unflip';
 new_roidb_file = fullfile(pwd, 'imdb/cache/ilsvrc', ...
     ['roidb_' dataset.roidb_test.name '_' FLIP sprintf('_%s.mat', name)]);
@@ -129,6 +129,7 @@ end
 ld = load(new_roidb_file);
 dataset.roidb_test.rois = ld.rois;
 
+exit;
 %% step 3, merge all result and get FCN output
 cprintf('blue', '\nStage two Fast-RCNN cascade TEST...\n');
 % if adding more proposals, you need to increase the number here
