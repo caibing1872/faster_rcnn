@@ -13,7 +13,7 @@ fprintf('\nInitialize model, dataset, and configuration...\n');
 % ======================= USER DEFINE =======================
 % change to point to your devkit install
 root_path = './datasets/ilsvrc14_det';
-opts.gpu_id = 1;            % single-gpu version, index from 0
+opts.gpu_id = 2;            % single-gpu version, index from 0
 
 % all 'test' model, so dont be surprised that initial roidb are zeros!
 % which means there's no GT in these fucking datasets.
