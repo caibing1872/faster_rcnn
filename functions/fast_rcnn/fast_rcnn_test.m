@@ -260,12 +260,8 @@ else
             split_path = [fileparts(temp) '/split'];
             mkdir_if_missing(split_path);
             assert(length(imdb.image_ids) == length(aboxes));
-	    disp('debug');
-	    fprintf(temp);
-	    disp('');
-	    fprintf(fileparts(temp));
-	    keyboard;
-            for shit = 1:length(imdb.image_ids)
+            
+	    for shit = 1:length(imdb.image_ids)
                 boxes = aboxes{shit};
 		try
                    save([split_path '/' imdb.image_ids{shit} '.mat'], 'boxes');
