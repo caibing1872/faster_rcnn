@@ -1,14 +1,14 @@
 clear; close all;
 nms_range = [.8 : -.05 : 0.3];
 
-%sub_dataset = 'real_test';
+sub_dataset = 'real_test';
 %sub_dataset = 'val1_14';
 %sub_dataset = 'val1_13';
-sub_dataset = 'pos1k_13';
+%sub_dataset = 'pos1k_13';
 
 %result_name = 'edgebox';
 result_name = 'ss';
-fucking_start_im = 102060;
+fucking_start_im = 1; %102060;
 %fucking_end_im = 125000; %length(test_im_list);
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
@@ -90,6 +90,7 @@ switch imdb.name
         im_path = [root_folder '/../ILSVRC2015_DET_test'];
         extension = '.JPEG';
         imdb.flip = false;
+        str_start = 1;
         
     case 'ilsvrc14_pos1k_13'
         root_folder = './datasets/ilsvrc14_det/ILSVRC2014_devkit';
@@ -99,6 +100,7 @@ switch imdb.name
         im_path = [root_folder '/../ILSVRC2014_DET_train'];
         extension = '.JPEG';
         imdb.flip = false;
+        str_start = 11;
 end
 if imdb.flip
     test_im_list_flip = cellfun(@(x) [x '_flip'], test_im_list, 'uniformoutput', false);
@@ -111,6 +113,7 @@ end
 if ~exist('fucking_end_im', 'var'), fucking_end_im = length(test_im_list); end
 
 %% extract boxes
+cnt = 0;
 if strcmp(method, 'edgebox')
     
     model = load('edgebox/models/forest/modelBsds');
@@ -125,35 +128,38 @@ if strcmp(method, 'edgebox')
     opts.minScore = .01;  % min score of boxes to detect
     opts.maxBoxes = 1e4;  % max number of boxes to detect
     
-    parfor i = fucking_start_im : fucking_end_im
+    for i = fucking_start_im : fucking_end_im
 %         if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
 %             fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d)...\n', ...
 %                 method, sub_dataset, i, fucking_start_im, fucking_end_im);
 %         end
-        if ~exist([save_name '/' test_im_list{i}(11:end) '.mat'], 'file')
+        cnt = cnt + 1;
+        if ~exist([save_name '/' test_im_list{i}(str_start:end) '.mat'], 'file')
             im = imread([im_path '/' test_im_list{i} extension]);
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             boxes_edge = edgeBoxes(im, model, opts);
             % [x, y, w, h, score]
             boxes_edge(:, 3) = boxes_edge(:, 1) + boxes_edge(:, 3) - 1;
             boxes_edge(:, 4) = boxes_edge(:, 2) + boxes_edge(:, 4) - 1;
-            parsave([save_name '/' test_im_list{i}(11:end) '.mat'], boxes_edge);
+            parsave([save_name '/' test_im_list{i}(str_start:end) '.mat'], boxes_edge);
         end
     end
     
 elseif strcmp(method, 'ss')
     
-    parfor i = fucking_start_im : fucking_end_im
-%         if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
+    for i = fucking_start_im : fucking_end_im
+%         cnt = cnt + 1;
+        disp(i);
+%         if i == fucking_start_im || i == fucking_end_im || mod(i, 50) == 0
 %             fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d), total: (%d) ...\n', ...
 %                 method, sub_dataset, i, fucking_start_im, fucking_end_im, length(test_im_list));
 %         end
-        if ~exist([save_name '/' test_im_list{i}(11:end) '.mat'], 'file')
-%             if i == 102065 || i == 102087
-%                 boxes = [];
-%                 save([save_name '/' test_im_list{i}(11:end) '.mat'], 'boxes');
-%                 continue;
-%             end          
+        if ~exist([save_name '/' test_im_list{i}(str_start:end) '.mat'], 'file')
+            if i == 13326 || i == 102087
+                boxes = [];
+                save([save_name '/' test_im_list{i}(str_start:end) '.mat'], 'boxes');
+                continue;
+            end          
             im = imread([im_path '/' test_im_list{i} extension]);            
             if size(im, 3) == 1, im = repmat(im, [1 1 3]); end
             try
@@ -164,7 +170,7 @@ elseif strcmp(method, 'ss')
             catch
                 boxes_ss = [];
             end
-            parsave([save_name '/' test_im_list{i}(11:end) '.mat'], boxes_ss);
+            parsave([save_name '/' test_im_list{i}(str_start:end) '.mat'], boxes_ss);
         end
     end
 end
@@ -181,7 +187,7 @@ if ~exist(save_name_new, 'file')
     fprintf('merge these split results\n\n');
     aboxes = cell(length(test_im_list), 1);
     for i = 1:length(test_im_list)
-        load([save_name '/' test_im_list{i}(11:end) '.mat']);
+        load([save_name '/' test_im_list{i}(str_start:end) '.mat']);
         aboxes{i} = boxes;
     end
     save(save_name_new, 'aboxes', '-v7.3');
