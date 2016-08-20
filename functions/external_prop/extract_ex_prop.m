@@ -203,7 +203,6 @@ for i = 1:length(top_k)
             save([save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], ...
                 'aboxes', '-v7.3');
             recall_per_cls = compute_recall_ilsvrc(...
-                [save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
             
             if recall_per_cls > 0
                 mean_recall = mean(extractfield(recall_per_cls, 'recall'));
