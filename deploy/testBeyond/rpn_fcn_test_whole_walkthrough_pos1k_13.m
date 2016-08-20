@@ -94,6 +94,7 @@ conf_fast_rcnn.fcn_fg_fraction      = fcn_fg_fraction;
 conf_fast_rcnn.fcn_max_size         = fcn_max_size;
 conf_fast_rcnn.update_roi_name      = update_roi_name;
 
+if 0
 %% step 1, RPN stage 1 extraction
 cprintf('blue', '\nStage one proposal TEST on val data ...\n');
 dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
@@ -104,7 +105,7 @@ dataset.roidb_test = RPN_TEST_ilsvrc_hyli(...
     'skip_rpn_test',        skip_rpn_test, ...
     'gpu_id',               opts.gpu_id ...
     );
-
+end
 %% step 2, add more proposal here
 name = sprintf('comboALL');
 FLIP = 'unflip';
