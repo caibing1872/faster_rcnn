@@ -4,12 +4,22 @@ nms_range = [.8 : -.05 : 0.3];
 sub_dataset = 'real_test';
 %sub_dataset = 'val1_14';
 %sub_dataset = 'val1_13';
+<<<<<<< HEAD
 %sub_dataset = 'pos1k_13';
+=======
+sub_dataset = 'pos1k_13';
+<<<<<<< HEAD
+result_name = 'edgebox';
+%result_name = 'ss';
+%result_name = 'attractioNet';
+=======
+>>>>>>> 0b20cc93af14be683d37b1b07b4106e34c1b97d4
 
 %result_name = 'edgebox';
 result_name = 'ss';
 fucking_start_im = 1; %102060;
 %fucking_end_im = 125000; %length(test_im_list);
+>>>>>>> 5f4230ba444e36b0fbad1f1f3e593805bdc443d9
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
 % note: we don't differentiate top_k when saving them
@@ -208,6 +218,15 @@ for i = 1:length(top_k)
             save([save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], ...
                 'aboxes', '-v7.3');
             recall_per_cls = compute_recall_ilsvrc(...
+<<<<<<< HEAD
+                [save_name(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
+            
+	    if recall_per_cls > 0
+   	    	mean_recall = mean(extractfield(recall_per_cls, 'recall'));
+            	cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
+                	method, top_k(i), nms_range(j), 100*mean_recall);
+	    end
+=======
                 [save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
             
             if recall_per_cls > 0
@@ -215,6 +234,7 @@ for i = 1:length(top_k)
                 cprintf('blue', 'method:: %s, top_k:: %d, nms:: %.2f, mean rec:: %.2f\n\n', ...
                     method, top_k(i), nms_range(j), 100*mean_recall);
             end
+>>>>>>> 5f4230ba444e36b0fbad1f1f3e593805bdc443d9
         end
     else
         % no nms
