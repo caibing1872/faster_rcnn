@@ -59,7 +59,8 @@ for i = 1:num_images
     end
     %th = tic;
     im = imread(imdb.image_at(i));
-    [boxes, scores, abox_deltas{i}, aanchors{i}, ascores{i}] = proposal_im_detect(conf, caffe_net, im);
+    [boxes, scores, abox_deltas{i}, aanchors{i}, ascores{i}] = ...
+        proposal_im_detect(conf, caffe_net, im);
     
     %fprintf(' time: %.3fs\n', toc(th)); 
     aboxes{i} = [boxes, scores];
