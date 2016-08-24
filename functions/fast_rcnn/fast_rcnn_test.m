@@ -141,11 +141,21 @@ catch
         end
         %th = tic;
         d = roidb.rois(i);
-        im = imread(imdb.image_at(i));
-        [boxes, scores] = fast_rcnn_im_detect(conf, caffe_net, im, d.boxes, max_rois_num_in_gpu);
-        
+	try
+           im = imread(imdb.image_at(i));
+           [boxes, scores] = fast_rcnn_im_detect(conf, caffe_net, im, d.boxes, max_rois_num_in_gpu);
+        catch
+	   % some stupid image between10.2w-10.5w in fucking pos1k_13 are CMYK, fuck!
+	   boxes = []; scores = [];
+	end
         for j = 1:num_classes
-            inds = find(~d.gt & scores(:, j) > thresh(j));
+            try
+		inds = find(~d.gt & scores(:, j) > thresh(j));
+	    catch
+		% in some case pos1k_13, some test images (index between 9.3-9.6w)
+		% have empty results (d.boxes = [])
+		inds = [];
+	    end
             if ~isempty(inds)
                 [~, ord] = sort(scores(inds, j), 'descend');
                 ord = ord(1:min(length(ord), max_per_image));
@@ -201,7 +211,7 @@ end
 compute_recall_switch = true;
 if strcmp(imdb.name, 'ilsvrc14_val2_no_GT') || ...
         strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
-        strcmp(imdb.name, 'ilsvrc14_val1_13') || ...
+        strcmp(imdb.name, 'ilsvrc14_val1_14') || ...
         strcmp(imdb.name, 'ilsvrc14_real_test') || ...
         strcmp(imdb.name, 'ilsvrc14_pos1k_13')
     compute_recall_switch = false; 
@@ -260,9 +270,15 @@ else
             split_path = [fileparts(temp) '/split'];
             mkdir_if_missing(split_path);
             assert(length(imdb.image_ids) == length(aboxes));
-            for shit = 1:length(imdb.image_ids)
+            
+	    for shit = 1:length(imdb.image_ids)
                 boxes = aboxes{shit};
-                save([split_path '/' imdb.image_ids{shit} '.mat'], 'boxes');
+		try
+                   save([split_path '/' imdb.image_ids{shit} '.mat'], 'boxes');
+ 		catch
+		   mkdir_if_missing(fileparts([split_path '/' imdb.image_ids{shit} '.mat']));
+		   save([split_path '/' imdb.image_ids{shit} '.mat'], 'boxes');
+		end
             end           
             %% =========================
             if compute_recall_switch

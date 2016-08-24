@@ -8,8 +8,8 @@ sub_dataset = 'pos1k_13';
 
 %result_name = 'edgebox';
 result_name = 'ss';
-fucking_start_im = 102060;
-%fucking_end_im = 125000; %length(test_im_list);
+fucking_start_im = 1; %125001;
+%fucking_end_im = 100000; %length(test_im_list);
 
 imdb.name = sprintf('ilsvrc14_%s', sub_dataset);
 % note: we don't differentiate top_k when saving them
@@ -107,7 +107,6 @@ if imdb.flip
     test_im_list_new(2:2:end) = test_im_list_flip;
     test_im_list = test_im_list_new;
 end
-
 if ~exist('fucking_end_im', 'var'), fucking_end_im = length(test_im_list); end
 
 %% extract boxes
@@ -142,7 +141,7 @@ if strcmp(method, 'edgebox')
     end
     
 elseif strcmp(method, 'ss')
-    
+
     parfor i = fucking_start_im : fucking_end_im
 %         if i == fucking_start_im || i == fucking_end_im || mod(i, 1000) == 0
 %             fprintf('extract box, method: %s, dataset: %s, %d / (%d-%d), total: (%d) ...\n', ...
@@ -171,10 +170,12 @@ end
 
 %% compute recall
 % first merge the fucking results together
+if (length(test_im_list) ~= length(unique(test_im_list))), warning('list is not unique'); end
+
 im_num = length(dir([save_name '/*.mat']));
-assert(im_num == length(test_im_list), ...
+assert(im_num == length(unique(test_im_list)), ...
     sprintf('fuck! actual no of images vs total supposed no: %d vs %d', ...
-    im_num, length(test_im_list)));
+    im_num, length(unique(test_im_list))));
 
 save_name_new = [save_name '/../boxes_right_format.mat'];
 if ~exist(save_name_new, 'file')
@@ -202,7 +203,6 @@ for i = 1:length(top_k)
             save([save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], ...
                 'aboxes', '-v7.3');
             recall_per_cls = compute_recall_ilsvrc(...
-                [save_name_new(1:end-4) sprintf('_nms_%.2f.mat', nms_range(j))], top_k(i), imdb);
             
             if recall_per_cls > 0
                 mean_recall = mean(extractfield(recall_per_cls, 'recall'));

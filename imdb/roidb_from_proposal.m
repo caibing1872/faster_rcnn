@@ -51,8 +51,8 @@ for i = 1 : ceil(length(rois)/chunk)
     % init empty structure called temp
     temp = struct('gt', [], 'overlap', [], 'boxes', [], 'class', []);
     temp(sub_length).gt = [];
-    %for kk = 1:sub_length
-    parfor kk = 1:sub_length
+    %parfor kk = 1:sub_length
+    for kk = 1:sub_length
         % 'kk' is relative index
         abs_ind = kk + (i-1)*chunk;
         [~, image_name1] = fileparts(image_ids_{abs_ind});
